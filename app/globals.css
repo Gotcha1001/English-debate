@@ -122,3 +122,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hides the scrollbar track/thumb visually, but the element still scrolls
+   normally with mouse wheel, trackpad, or touch. */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* Edge/old IE */
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge (Chromium) */
+}
