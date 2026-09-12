@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useQuery } from "convex/react";
 import Link from "next/link";
-import { Clock, Sparkles } from "lucide-react";
+import { Clock, GraduationCap, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { useTensesGenerator } from "@/hooks/useTensesGenerator";
 import { useDeleteSet } from "@/hooks/useDeleteSet";
@@ -11,10 +11,12 @@ import { LessonGeneratingModal } from "@/app/components/Lessonsgeneratingmodal";
 import { HudPanel } from "@/app/components/HudPanel";
 import { DeleteButton } from "@/app/components/DeleteButton";
 import { SearchBar } from "../components/SearchBar";
+import { TensesGuide } from "../components/Tensesguide";
 
 export default function TensesPage() {
   const [topic, setTopic] = useState("");
   const [search, setSearch] = useState("");
+  const [guideOpen, setGuideOpen] = useState(false);
   const { generateTenseSet, isGenerating, error } = useTensesGenerator();
   const pastSets = useQuery(api.tensesData.listMyTenseSets);
   const { deleteItem, deletingId } = useDeleteSet(
@@ -35,6 +37,7 @@ export default function TensesPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <LessonGeneratingModal open={isGenerating} variant="tenses" />
+      <TensesGuide open={guideOpen} onOpenChange={setGuideOpen} />
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-cyan-50">
           Tenses
@@ -43,6 +46,14 @@ export default function TensesPage() {
           Get a short paragraph on any topic, see every sentence shifted across
           five tenses, and test yourself on naming each one.
         </p>
+        <button
+          type="button"
+          onClick={() => setGuideOpen(true)}
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-4 py-2.5 text-sm font-semibold text-cyan-100 transition hover:border-cyan-400/60 hover:bg-cyan-400/20"
+        >
+          <GraduationCap className="h-4 w-4" />
+          Let&apos;s learn how
+        </button>
       </header>
       <HudPanel className="p-5">
         <form onSubmit={handleSubmit}>

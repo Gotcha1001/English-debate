@@ -3,18 +3,20 @@
 import { useState, type FormEvent } from "react";
 import { useQuery } from "convex/react";
 import Link from "next/link";
-import { SpellCheck, Sparkles } from "lucide-react";
+import { GraduationCap, SpellCheck, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { useGrammarGenerator } from "@/hooks/useGrammarGenerator";
 import { useDeleteSet } from "@/hooks/useDeleteSet";
 import { LessonGeneratingModal } from "@/app/components/Lessonsgeneratingmodal";
 import { HudPanel } from "@/app/components/HudPanel";
 import { DeleteButton } from "@/app/components/DeleteButton";
+import { PartsOfSpeechGuide } from "@/app/components/Partsofspeechguide";
 import { SearchBar } from "../components/SearchBar";
 
 export default function GrammarBreakdownPage() {
   const [topic, setTopic] = useState("");
   const [search, setSearch] = useState("");
+  const [guideOpen, setGuideOpen] = useState(false);
   const { generateGrammarSet, isGenerating, error } = useGrammarGenerator();
   const pastSets = useQuery(api.grammarData.listMyGrammarSets);
   const { deleteItem, deletingId } = useDeleteSet(
@@ -38,15 +40,26 @@ export default function GrammarBreakdownPage() {
           (see note below), switch this to variant="grammar". Falls back
           to the existing lesson copy/steps until then. */}
       <LessonGeneratingModal open={isGenerating} variant="lesson" />
+      <PartsOfSpeechGuide open={guideOpen} onOpenChange={setGuideOpen} />
 
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-cyan-50">
-          Grammar Breakdown
-        </h1>
-        <p className="mt-2 max-w-xl text-slate-600 dark:text-cyan-200/60">
-          Get 5 example sentences on any topic, a word-by-word parts-of-speech
-          breakdown, and a 5-question reveal-the-answer quiz for each one.
-        </p>
+      <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-cyan-50">
+            Grammar Breakdown
+          </h1>
+          <p className="mt-2 max-w-xl text-slate-600 dark:text-cyan-200/60">
+            Get 5 example sentences on any topic, a word-by-word parts-of-speech
+            breakdown, and a 5-question reveal-the-answer quiz for each one.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setGuideOpen(true)}
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-4 py-2.5 text-sm font-semibold text-cyan-100 transition hover:border-cyan-400/60 hover:bg-cyan-400/20"
+        >
+          <GraduationCap className="h-4 w-4" />
+          Let&apos;s learn how
+        </button>
       </header>
 
       <HudPanel className="p-5">
