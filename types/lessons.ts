@@ -408,3 +408,59 @@ export function assertGeneratedTenseSet(value: unknown): GeneratedTenseSet {
 
 // NOTE: isString is already defined once near the top of types/lessons.ts --
 // do not redeclare it, just use it.
+// ADD to types/lessons.ts, below GeneratedTenseSet / assertGeneratedTenseSet.
+// Reuses Tense / TENSES already defined for that feature.
+
+export interface TenseConversionSentence {
+  sentence: string;
+  fromTense: Tense;
+  toTense: Tense;
+  answer: string;
+}
+
+export interface GeneratedTenseConversionSet {
+  topic: string;
+  sentences: TenseConversionSentence[];
+}
+
+function isTenseConversionSentence(
+  value: unknown,
+): value is TenseConversionSentence {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    isString(v.sentence) &&
+    isTense(v.fromTense) &&
+    isTense(v.toTense) &&
+    v.fromTense !== v.toTense &&
+    isString(v.answer)
+  );
+}
+
+/**
+ * Validates and narrows an unknown parsed-JSON value into a
+ * GeneratedTenseConversionSet. Throws a descriptive error (never returns a
+ * partially-typed object) so the caller can decide whether to retry.
+ */
+export function assertGeneratedTenseConversionSet(
+  value: unknown,
+): GeneratedTenseConversionSet {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("Tense conversion JSON was not an object");
+  }
+  const v = value as Record<string, unknown>;
+  if (!isString(v.topic)) {
+    throw new Error("Tense conversion JSON missing string 'topic'");
+  }
+  if (
+    !Array.isArray(v.sentences) ||
+    !v.sentences.every(isTenseConversionSentence)
+  ) {
+    throw new Error("Tense conversion JSON has invalid 'sentences'");
+  }
+  return { topic: v.topic, sentences: v.sentences };
+}
+
+// NOTE: this file already has `isTense` (private helper next to
+// assertGeneratedTenseSet) -- reuse it rather than redeclaring it. If you
+// named it differently there, just match the name.

@@ -33,6 +33,13 @@ const GRAMMAR_STEPS = [
   { icon: Sparkles, label: "Polishing the breakdown" },
 ];
 
+const TENSE_CONVERSION_STEPS = [
+  { icon: BookOpen, label: "Writing example sentences" },
+  { icon: Clock, label: "Picking a from/to tense pair" },
+  { icon: ListChecks, label: "Working out each correct rewrite" },
+  { icon: Sparkles, label: "Polishing the set" },
+];
+
 const TENSES_STEPS = [
   { icon: BookOpen, label: "Writing the paragraph" },
   { icon: Clock, label: "Shifting sentences across tenses" },
@@ -71,6 +78,12 @@ const COPY = {
     subtitle: "Shifting each sentence across five tenses",
     icon: Clock,
     steps: TENSES_STEPS,
+  },
+  tenseConversion: {
+    title: "Writing your conversion set",
+    subtitle: "Picking sentences and target tenses",
+    icon: Clock,
+    steps: TENSE_CONVERSION_STEPS,
   },
 } as const;
 
@@ -112,7 +125,7 @@ export function LessonGeneratingModal({
   variant = "lesson",
 }: {
   open: boolean;
-  variant?: "lesson" | "debate" | "grammar" | "tenses";
+  variant?: "lesson" | "debate" | "grammar" | "tenses" | "tenseConversion";
 }) {
   const { title, subtitle, icon: CoreIcon, steps } = COPY[variant];
   const reduceMotion = useReducedMotion();

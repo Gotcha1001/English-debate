@@ -231,3 +231,48 @@ Requirements:
 Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
 ${TENSES_JSON_SHAPE}`;
 }
+
+// ADD to lib/prompts.ts, below buildTensesPrompt. Reuses Difficulty,
+// DIFFICULTY_INSTRUCTIONS, and the TENSES list already in this file (or
+// inline the 5 names again if you kept them local to types/lessons.ts).
+
+const TENSE_CONVERSION_JSON_SHAPE = `{
+  "topic": string,
+  "sentences": [
+    {
+      "sentence": string,   // one sentence about the topic, written in "fromTense"
+      "fromTense": "Present Simple" | "Past Simple" | "Past Continuous" | "Present Perfect" | "Future Simple",
+      "toTense": "Present Simple" | "Past Simple" | "Past Continuous" | "Present Perfect" | "Future Simple",  // must differ from fromTense
+      "answer": string      // the SAME sentence correctly rewritten in "toTense"
+    }
+  ]  // exactly 5 sentences
+}`;
+
+/**
+ * "Transform the Tense" generator -- second Tenses activity. Writes 5
+ * sentences about a topic, each tagged with its current tense and a
+ * DIFFERENT target tense the learner must convert it into, plus the
+ * correct rewrite for self-checking after they've had a go themselves.
+ */
+export function buildTenseConversionPrompt(
+  topic?: string,
+  difficulty?: Difficulty,
+): string {
+  const topicInstruction = topic
+    ? `The topic is: "${topic}".`
+    : `No topic was given -- choose one interesting, everyday topic suitable for adult ESL learners. Put your chosen topic in the "topic" field.`;
+  const difficultyInstruction =
+    DIFFICULTY_INSTRUCTIONS[difficulty ?? "intermediate"];
+  return `You are an ESL grammar teacher. Write 5 separate sentences about a topic, each one a small "convert this to another tense" exercise.
+${topicInstruction}
+
+Requirements:
+- Generate exactly 5 standalone sentences about the topic (they don't need to connect into a paragraph). ${difficultyInstruction}
+- For each sentence, pick "fromTense" (the tense the sentence is written in) and "toTense" (a DIFFERENT tense the learner must convert it into) from: Present Simple, Past Simple, Past Continuous, Present Perfect, Future Simple.
+- Across the 5 sentences, use a good variety of fromTense/toTense pairs -- don't repeat the same pair twice.
+- "answer": rewrite "sentence" correctly in "toTense", keeping the same subject and meaning, changing only what the tense requires.
+- Keep each sentence short and natural, clear enough that there's one obviously correct way to convert it.
+
+Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
+${TENSE_CONVERSION_JSON_SHAPE}`;
+}
