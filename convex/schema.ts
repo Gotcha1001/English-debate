@@ -135,4 +135,33 @@ export default defineSchema({
     createdBy: v.id("users"),
     createdAt: v.number(),
   }).index("by_creator", ["createdBy"]),
+
+  // ADD to convex/schema.ts, alongside tenseSets. Re-uses the same 5-tense
+  // union (add a shared validator if you'd rather not repeat it -- see the
+  // note at the bottom of tensesData.ts below).
+  tenseConversionSets: defineTable({
+    topic: v.string(),
+    sentences: v.array(
+      v.object({
+        sentence: v.string(), // the sentence as given, written in `fromTense`
+        fromTense: v.union(
+          v.literal("Present Simple"),
+          v.literal("Past Simple"),
+          v.literal("Past Continuous"),
+          v.literal("Present Perfect"),
+          v.literal("Future Simple"),
+        ),
+        toTense: v.union(
+          v.literal("Present Simple"),
+          v.literal("Past Simple"),
+          v.literal("Past Continuous"),
+          v.literal("Present Perfect"),
+          v.literal("Future Simple"),
+        ),
+        answer: v.string(), // the correct rewrite of `sentence` in `toTense`
+      }),
+    ), // exactly 5
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_creator", ["createdBy"]),
 });

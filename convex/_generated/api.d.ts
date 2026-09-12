@@ -18,6 +18,8 @@ import type * as lifeSituations from "../lifeSituations.js";
 import type * as lifeSituationsData from "../lifeSituationsData.js";
 import type * as quickQuestions from "../quickQuestions.js";
 import type * as quickQuestionsData from "../quickQuestionsData.js";
+import type * as tenseConversion from "../tenseConversion.js";
+import type * as tenseConversionData from "../tenseConversionData.js";
 import type * as tenses from "../tenses.js";
 import type * as tensesData from "../tensesData.js";
 import type * as user from "../user.js";
@@ -39,6 +41,8 @@ declare const fullApi: ApiFromModules<{
   lifeSituationsData: typeof lifeSituationsData;
   quickQuestions: typeof quickQuestions;
   quickQuestionsData: typeof quickQuestionsData;
+  tenseConversion: typeof tenseConversion;
+  tenseConversionData: typeof tenseConversionData;
   tenses: typeof tenses;
   tensesData: typeof tensesData;
   user: typeof user;
