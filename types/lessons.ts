@@ -322,3 +322,89 @@ export function assertGeneratedGrammarSet(value: unknown): GeneratedGrammarSet {
 
 // NOTE: isString is already defined once near the top of types/lessons.ts
 // (used by assertGeneratedLesson etc.) -- do not redeclare it, just use it.
+
+export const TENSES = [
+  "Present Simple",
+  "Past Simple",
+  "Past Continuous",
+  "Present Perfect",
+  "Future Simple",
+] as const;
+
+export type Tense = (typeof TENSES)[number];
+
+export interface TenseVariant {
+  tense: Tense;
+  sentence: string;
+  options: string[];
+  correctIndex: number;
+}
+
+export interface TenseSentence {
+  sentence: string;
+  variants: TenseVariant[];
+}
+
+// The shape the AI model must return for a Tenses set.
+export interface GeneratedTenseSet {
+  topic: string;
+  sentences: TenseSentence[];
+}
+
+function isTense(value: unknown): value is Tense {
+  return (
+    typeof value === "string" && (TENSES as readonly string[]).includes(value)
+  );
+}
+
+function isTenseVariant(value: unknown): value is TenseVariant {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    isTense(v.tense) &&
+    isString(v.sentence) &&
+    Array.isArray(v.options) &&
+    v.options.length > 0 &&
+    v.options.every(isString) &&
+    typeof v.correctIndex === "number" &&
+    Number.isInteger(v.correctIndex) &&
+    v.correctIndex >= 0 &&
+    v.correctIndex < v.options.length
+  );
+}
+
+function isTenseSentence(value: unknown): value is TenseSentence {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  if (!isString(v.sentence)) return false;
+  if (
+    !Array.isArray(v.variants) ||
+    v.variants.length === 0 ||
+    !v.variants.every(isTenseVariant)
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Validates and narrows an unknown parsed-JSON value into a
+ * GeneratedTenseSet. Throws a descriptive error (never returns a
+ * partially-typed object) so the caller can decide whether to retry.
+ */
+export function assertGeneratedTenseSet(value: unknown): GeneratedTenseSet {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("Tenses JSON was not an object");
+  }
+  const v = value as Record<string, unknown>;
+  if (!isString(v.topic)) {
+    throw new Error("Tenses JSON missing string 'topic'");
+  }
+  if (!Array.isArray(v.sentences) || !v.sentences.every(isTenseSentence)) {
+    throw new Error("Tenses JSON has invalid 'sentences'");
+  }
+  return { topic: v.topic, sentences: v.sentences };
+}
+
+// NOTE: isString is already defined once near the top of types/lessons.ts --
+// do not redeclare it, just use it.

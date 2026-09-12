@@ -110,4 +110,29 @@ export default defineSchema({
     createdBy: v.id("users"),
     createdAt: v.number(),
   }).index("by_creator", ["createdBy"]),
+
+  tenseSets: defineTable({
+    topic: v.string(),
+    sentences: v.array(
+      v.object({
+        sentence: v.string(), // the base sentence, verbatim, written in Present Simple
+        variants: v.array(
+          v.object({
+            tense: v.union(
+              v.literal("Present Simple"),
+              v.literal("Past Simple"),
+              v.literal("Past Continuous"),
+              v.literal("Present Perfect"),
+              v.literal("Future Simple"),
+            ),
+            sentence: v.string(), // the base sentence rewritten in `tense`
+            options: v.array(v.string()), // the 5 tense names, shuffled
+            correctIndex: v.number(), // index into options that matches `tense`
+          }),
+        ), // exactly 5 --- one per tense, order shuffled per question
+      }),
+    ), // exactly 5 sentences
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_creator", ["createdBy"]),
 });

@@ -186,3 +186,48 @@ Requirements:
 Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
 ${GRAMMAR_JSON_SHAPE}`;
 }
+
+const TENSES_JSON_SHAPE = `{
+  "topic": string,
+  "sentences": [
+    {
+      "sentence": string,   // one base sentence from the paragraph, written in Present Simple
+      "variants": [         // exactly 5, one per tense below, IN THIS ORDER
+        {
+          "tense": "Present Simple" | "Past Simple" | "Past Continuous" | "Present Perfect" | "Future Simple",
+          "sentence": string,        // the base sentence rewritten in that tense, same meaning/subject
+          "options": [string, string, string, string, string], // all 5 tense names above, SHUFFLED
+          "correctIndex": number     // index into options matching "tense"
+        }
+      ]
+    }
+  ]  // exactly 5 sentences
+}`;
+
+/**
+ * "Tenses" generator -- standalone page. Writes a short 5-sentence paragraph
+ * on a topic, then rewrites every sentence in Present Simple, Past Simple,
+ * Past Continuous, Present Perfect, and Future Simple, pairing each rewrite
+ * with a multiple-choice question that asks the learner to name the tense.
+ */
+export function buildTensesPrompt(
+  topic?: string,
+  difficulty?: Difficulty,
+): string {
+  const topicInstruction = topic
+    ? `The topic is: "${topic}".`
+    : `No topic was given -- choose one interesting, everyday topic suitable for adult ESL learners. Put your chosen topic in the "topic" field.`;
+  const difficultyInstruction =
+    DIFFICULTY_INSTRUCTIONS[difficulty ?? "intermediate"];
+  return `You are an ESL grammar teacher. Write a short paragraph about a topic, then show how each sentence changes across five tenses, and quiz the learner on naming each one.
+${topicInstruction}
+
+Requirements:
+- Write exactly 5 sentences that flow together as one short paragraph about the topic, in Present Simple. ${difficultyInstruction}
+- For EVERY sentence, produce exactly 5 variants, one for each tense in this exact order: Present Simple, Past Simple, Past Continuous, Present Perfect, Future Simple. Rewrite the sentence naturally in that tense -- keep the same subject and meaning, change only what the tense requires (verb form, and time expressions like "yesterday", "right now", "by next year" where it reads naturally).
+- For every variant, set "options" to all 5 tense names above in a SHUFFLED order (never the same order twice in a row), and set "correctIndex" to the position of the correct tense within that shuffled list.
+- Keep sentences short and clear enough that the tense is unambiguous from its form (helper verbs, verb endings, time words) alone -- a learner should be able to tell the tense without already knowing the topic.
+
+Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
+${TENSES_JSON_SHAPE}`;
+}
