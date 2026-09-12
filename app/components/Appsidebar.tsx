@@ -144,6 +144,7 @@ import {
   Shuffle,
   Settings,
   BookAIcon,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -154,6 +155,7 @@ const NAV_ITEMS = [
   { href: "/free-talking", label: "Full Lesson", icon: BookOpen },
   { href: "/quick-questions", label: "40 Questions", icon: ListChecks },
   { href: "/life-situations", label: "Life Situations", icon: Shuffle },
+  { href: "/tenses", label: "Tenses", icon: Clock },
   { href: "/grammar", label: "Grammar", icon: BookAIcon },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

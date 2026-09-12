@@ -11,7 +11,13 @@
 // counts) and the steps map to what generateLesson actually does.
 
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { BookOpen, MessagesSquare, ListChecks, Sparkles } from "lucide-react";
+import {
+  BookOpen,
+  MessagesSquare,
+  ListChecks,
+  Sparkles,
+  Clock,
+} from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 const LESSON_STEPS = [
@@ -25,6 +31,13 @@ const GRAMMAR_STEPS = [
   { icon: ListChecks, label: "Tagging every word" },
   { icon: MessagesSquare, label: "Writing quiz questions" },
   { icon: Sparkles, label: "Polishing the breakdown" },
+];
+
+const TENSES_STEPS = [
+  { icon: BookOpen, label: "Writing the paragraph" },
+  { icon: Clock, label: "Shifting sentences across tenses" },
+  { icon: ListChecks, label: "Writing tense-naming questions" },
+  { icon: Sparkles, label: "Polishing the set" },
 ];
 
 const DEBATE_STEPS = [
@@ -52,6 +65,12 @@ const COPY = {
     subtitle: "Building your grammar breakdown",
     icon: BookOpen,
     steps: GRAMMAR_STEPS,
+  },
+  tenses: {
+    title: "Writing your tenses set",
+    subtitle: "Shifting each sentence across five tenses",
+    icon: Clock,
+    steps: TENSES_STEPS,
   },
 } as const;
 
@@ -93,7 +112,7 @@ export function LessonGeneratingModal({
   variant = "lesson",
 }: {
   open: boolean;
-  variant?: "lesson" | "debate" | "grammar";
+  variant?: "lesson" | "debate" | "grammar" | "tenses";
 }) {
   const { title, subtitle, icon: CoreIcon, steps } = COPY[variant];
   const reduceMotion = useReducedMotion();
