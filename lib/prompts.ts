@@ -276,3 +276,198 @@ Requirements:
 Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
 ${TENSE_CONVERSION_JSON_SHAPE}`;
 }
+
+// ADD to lib/prompts.ts, below buildLifeSituationsPrompt. Reuses Difficulty
+// and DIFFICULTY_INSTRUCTIONS already defined in this file.
+
+const IDIOM_JSON_SHAPE = `{
+  "topic": string,
+  "idiom": string,                 // the idiom itself, Title Case, e.g. "Off the Record"
+  "goal": string,                  // one sentence: what the learner will practice today
+  "origin": string,                // 2-4 sentences on where the idiom comes from and why it's used
+  "example": string,               // one natural sentence using the idiom
+  "relatedExpressions": [          // exactly 2
+    { "phrase": string, "meaning": string, "example": string }
+  ],
+  "choicePrompt": string,          // one short question framing the 3 choice pairs below
+  "choicePairs": [                 // exactly 3
+    { "optionA": string, "optionB": string }
+  ],
+  "standScaleLabels": [string, string, string, string, string], // exactly 5, one extreme to the other, phrased using the idiom/theme
+  "standQuestions": [string]       // exactly 3, personal questions a learner can answer using the scale
+}`;
+
+/**
+ * "Idioms" generator -- standalone page. Picks (or is given) a topic, finds
+ * an idiom connected to it, explains its origin, gives 2 related
+ * expressions, then builds a "Make a Choice" (3 A-vs-B pairs) and a
+ * "Where Do You Stand?" 5-point scale + discussion questions -- all
+ * speaking practice, no correct answers.
+ */
+export function buildIdiomsPrompt(
+  topic?: string,
+  difficulty?: Difficulty,
+): string {
+  const topicInstruction = topic
+    ? `The topic is: "${topic}". Choose an idiom that connects naturally to this topic.`
+    : `No topic was given -- pick any common, useful English idiom and put a short topic label describing its theme (e.g. "Privacy & Secrets") in the "topic" field.`;
+  const difficultyInstruction =
+    DIFFICULTY_INSTRUCTIONS[difficulty ?? "intermediate"];
+  return `You are an ESL teacher building a one-idiom speaking lesson for adult English learners.
+${topicInstruction}
+Requirements:
+- "idiom": the idiom itself, written in Title Case.
+- "goal": one short sentence describing what the learner will practice ("Learn how to use the idiom '...' in conversations about ...").
+- "origin": 2-4 sentences explaining where the idiom comes from or why English speakers use it. ${difficultyInstruction}
+- "example": one natural sentence that uses the idiom correctly.
+- "relatedExpressions": exactly 2 OTHER expressions or idioms that mean something similar or related, each with its own one-sentence meaning and one example sentence using it (not the same idiom as "idiom").
+- "choicePrompt": one short question that frames a set of 3 "this vs that" choices related to the idiom's theme (e.g. for "Off the Record": "What Should Be Kept Off the Record?").
+- "choicePairs": exactly 3 pairs of contrasting short options (2-4 words each) a learner could argue between and explain their reasoning -- no correct answer, this is for discussion.
+- "standScaleLabels": exactly 5 short phrases forming a scale from one extreme to the opposite extreme, using or echoing the idiom's theme (e.g. "Always off the record" ... "Always open"). Order them from one extreme to the other.
+- "standQuestions": exactly 6 short personal questions (under 20 words each) that a learner could answer by placing themselves on that scale and explaining why, related to the topic.
+Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
+${IDIOM_JSON_SHAPE}`;
+}
+// ADD to lib/prompts.ts, below buildIdiomsPrompt. Reuses Difficulty and
+// DIFFICULTY_INSTRUCTIONS already defined in this file.
+
+const SYNONYM_JSON_SHAPE = `{
+  "topic": string,
+  "groups": [                          // exactly 5
+    {
+      "concept": string,               // the base idea, e.g. "Angry"
+      "spectrumLabel": string,         // describes the two ends, e.g. "Mild -> Intense" or "Negative -> Positive"
+      "words": [string, string, string, string, string], // exactly 5 near-synonyms, in CORRECT order from one end of the spectrum to the other
+      "connotationNote": string,       // one sentence on why these words aren't interchangeable
+      "fillBlankSentence": string,     // one natural sentence containing "___" where exactly one of the 5 words fits best
+      "correctWordIndex": number,      // index into "words" -- the best fit for the blank
+      "debateQuestion": string         // one discussion/debate question built from the connotation gap between two of the words
+    }
+  ],
+  "discussionQuestions": [string]      // exactly 15, general questions about the topic, naturally using a mix of the words above
+}`;
+
+/**
+ * "Synonym Spectrum" generator -- standalone page. Builds 5 groups of near-
+ * synonyms ordered along a spectrum (intensity or connotation), each paired
+ * with a fill-in-the-blank check and a debate question grown from the
+ * connotation gap, plus general discussion questions that reuse the
+ * vocabulary. Interactive + conversation/debate in one feature.
+ */
+export function buildSynonymsPrompt(
+  topic?: string,
+  difficulty?: Difficulty,
+): string {
+  const topicInstruction = topic
+    ? `The topic is: "${topic}". Base every synonym group around vocabulary connected to this topic.`
+    : `No topic was given -- pick a broad, useful theme (e.g. emotions, describing people, talking about work) and put a short label for it in the "topic" field.`;
+  const difficultyInstruction =
+    DIFFICULTY_INSTRUCTIONS[difficulty ?? "intermediate"];
+  return `You are an ESL vocabulary teacher building an interactive "shades of meaning" lesson for adult English learners.
+${topicInstruction}
+Requirements:
+- Generate exactly 5 "groups", each built around ONE base concept (an emotion, a personality trait, a quality, an action -- whatever fits the topic).
+- "words": exactly 5 near-synonyms for that concept, ordered correctly along the spectrum described in "spectrumLabel" (e.g. mildest to most intense, or most negative to most positive). Do not shuffle them here -- write them in the TRUE correct order; the app will shuffle them for the exercise. ${difficultyInstruction}
+- "connotationNote": one sentence explaining why a learner can't just swap these words for each other (formality, intensity, or positive/negative judgment).
+- "fillBlankSentence": one natural sentence with "___" where exactly one of the 5 words is clearly the best fit; the other 4 would sound odd or change the meaning there.
+- "correctWordIndex": the index (0-based) into "words" of the best fit for the blank.
+- "debateQuestion": one open discussion/debate question that uses the connotation difference between two of the words in the group (e.g. calling the same behavior by a kinder word vs a harsher one) to spark a real argument -- no correct answer.
+- Across the 5 groups, vary the kind of spectrum (don't make all 5 about intensity -- mix in formality, positivity/negativity, or size/degree).
+- "discussionQuestions": exactly 15 short, open discussion questions about the topic in general, naturally written so a learner could use several of the group words while answering. Keep each under 20 words.
+Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
+${SYNONYM_JSON_SHAPE}`;
+}
+
+// ADD to lib/prompts.ts, below buildSynonymsPrompt. Reuses Difficulty and
+// DIFFICULTY_INSTRUCTIONS already defined in this file.
+
+const ANTONYM_JSON_SHAPE = `{
+  "topic": string,
+  "pairs": [                            // exactly 8
+    { "word": string, "antonym": string, "exampleSentence": string }
+  ],
+  "analogies": [                        // exactly 5
+    {
+      "pairIndexA": number,             // index into "pairs" -- the given relationship
+      "pairIndexB": number,             // index into "pairs" -- the word being asked about (different from pairIndexA)
+      "options": [string, string, string, string], // exactly 4, one of which is pairs[pairIndexB].antonym
+      "correctIndex": number            // index into "options" matching pairs[pairIndexB].antonym
+    }
+  ]
+}`;
+
+/**
+ * "Antonym Match" generator -- standalone page. Builds 8 word/antonym pairs
+ * around a topic for a tap-to-match game, plus 5 "A is to A' as B is to ___"
+ * analogy questions built from those same pairs.
+ */
+export function buildAntonymsPrompt(
+  topic?: string,
+  difficulty?: Difficulty,
+): string {
+  const topicInstruction = topic
+    ? `The topic is: "${topic}". Base every pair on vocabulary connected to this topic.`
+    : `No topic was given -- pick a broad, useful theme (e.g. describing weather, personality, size and speed) and put a short label for it in the "topic" field.`;
+  const difficultyInstruction =
+    DIFFICULTY_INSTRUCTIONS[difficulty ?? "intermediate"];
+  return `You are an ESL vocabulary teacher building an interactive antonyms lesson for adult English learners.
+${topicInstruction}
+Requirements:
+- "pairs": exactly 8 word/antonym pairs connected to the topic. ${difficultyInstruction} Each needs one natural "exampleSentence" that uses BOTH the word and its antonym together to show the contrast (e.g. "The soup was too hot to eat, so I waited for it to turn cold.").
+- Keep every word and antonym to a single common word or short phrase (no rare vocabulary) so the matching game stays fair.
+- Do not repeat the same word or antonym across two different pairs.
+- "analogies": exactly 5 questions in the form "pairs[pairIndexA].word is to pairs[pairIndexA].antonym as pairs[pairIndexB].word is to ___". Pick pairIndexA and pairIndexB as two DIFFERENT indices from "pairs" (0-7) for each analogy, and vary which pairs you use across the 5 so most of the 8 pairs get used at least once.
+- "options": exactly 4 words for each analogy -- one must be exactly pairs[pairIndexB].antonym (the correct answer), and the other 3 should be plausible but wrong distractors (other antonyms from the set, or close-but-wrong words).
+- "correctIndex": the 0-based index into "options" that matches pairs[pairIndexB].antonym.
+Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
+${ANTONYM_JSON_SHAPE}`;
+}
+
+// ADD to lib/prompts.ts, below buildAntonymsPrompt. Reuses Difficulty and
+// DIFFICULTY_INSTRUCTIONS already defined in this file.
+
+const WORD_RELATION_JSON_SHAPE = `{
+  "topic": string,
+  "groups": [                          // exactly 6
+    {
+      "word": string,                  // the base word
+      "synonymOptions": [string, string, string, string], // exactly 4, one means the same as "word"
+      "correctSynonymIndex": number,   // index into synonymOptions
+      "antonymOptions": [string, string, string, string],  // exactly 4, one means the opposite of "word"
+      "correctAntonymIndex": number,   // index into antonymOptions
+      "debateQuestion": string         // built by comparing the correct synonym and antonym for "word"
+    }
+  ],
+  "discussionQuestions": [string]      // exactly 15, general questions about the topic
+}`;
+
+/**
+ * "Word Relations" generator -- standalone page. Combines a "choose the
+ * synonym" and "choose the antonym" multiple choice for each base word with
+ * a debate question that compares the two, plus general discussion
+ * questions at the end. Merges the interactivity of Antonym Match with the
+ * debate angle of Synonym Spectrum.
+ */
+export function buildWordRelationsPrompt(
+  topic?: string,
+  difficulty?: Difficulty,
+): string {
+  const topicInstruction = topic
+    ? `The topic is: "${topic}". Base every group's word on vocabulary connected to this topic.`
+    : `No topic was given -- pick a broad, useful theme (e.g. personality, emotions, describing places) and put a short label for it in the "topic" field.`;
+  const difficultyInstruction =
+    DIFFICULTY_INSTRUCTIONS[difficulty ?? "intermediate"];
+  return `You are an ESL vocabulary teacher building a combined synonym/antonym lesson for adult English learners.
+${topicInstruction}
+Requirements:
+- Generate exactly 6 groups, each built around ONE base word connected to the topic. ${difficultyInstruction}
+- "synonymOptions": exactly 4 words, only ONE of which is a genuine synonym of "word" -- the other 3 should be plausible-looking but clearly wrong (unrelated words, or words that sound similar but mean something different).
+- "correctSynonymIndex": the 0-based index of the correct synonym in synonymOptions.
+- "antonymOptions": exactly 4 words, only ONE of which is a genuine antonym of "word" -- same distractor rules as above, and don't reuse any word from synonymOptions.
+- "correctAntonymIndex": the 0-based index of the correct antonym in antonymOptions.
+- "debateQuestion": one open discussion/debate question that compares the correct synonym and the correct antonym for THIS word -- e.g. whether calling someone the antonym is really just "not" the synonym, whether the synonym and the word carry the exact same judgment, or whether context changes which one people actually use. No correct answer -- this is for speaking practice.
+- Across the 6 groups, use a good mix of word types (adjectives, verbs, nouns) if the topic allows it.
+- "discussionQuestions": exactly 15 short, open discussion questions about the topic in general (under 20 words each), independent of the 6 words above.
+Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
+${WORD_RELATION_JSON_SHAPE}`;
+}

@@ -164,4 +164,86 @@ export default defineSchema({
     createdBy: v.id("users"),
     createdAt: v.number(),
   }).index("by_creator", ["createdBy"]),
+
+  // ADD to convex/schema.ts, alongside lifeSituationSets.
+  idiomSets: defineTable({
+    topic: v.string(),
+    idiom: v.string(),
+    goal: v.string(),
+    origin: v.string(),
+    example: v.string(),
+    relatedExpressions: v.array(
+      v.object({
+        phrase: v.string(),
+        meaning: v.string(),
+        example: v.string(),
+      }),
+    ),
+    choicePrompt: v.string(),
+    choicePairs: v.array(
+      v.object({ optionA: v.string(), optionB: v.string() }),
+    ),
+    standScaleLabels: v.array(v.string()), // exactly 5
+    standQuestions: v.array(v.string()),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_creator", ["createdBy"]),
+
+  // ADD to convex/schema.ts, alongside idiomSets.
+  synonymSets: defineTable({
+    topic: v.string(),
+    groups: v.array(
+      v.object({
+        concept: v.string(),
+        spectrumLabel: v.string(),
+        words: v.array(v.string()), // exactly 5, correct order
+        connotationNote: v.string(),
+        fillBlankSentence: v.string(),
+        correctWordIndex: v.number(),
+        debateQuestion: v.string(),
+      }),
+    ), // exactly 5
+    discussionQuestions: v.array(v.string()), // exactly 15
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_creator", ["createdBy"]),
+
+  // ADD to convex/schema.ts, alongside synonymSets.
+  antonymSets: defineTable({
+    topic: v.string(),
+    pairs: v.array(
+      v.object({
+        word: v.string(),
+        antonym: v.string(),
+        exampleSentence: v.string(),
+      }),
+    ), // exactly 8
+    analogies: v.array(
+      v.object({
+        pairIndexA: v.number(),
+        pairIndexB: v.number(),
+        options: v.array(v.string()), // exactly 4
+        correctIndex: v.number(),
+      }),
+    ), // exactly 5
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_creator", ["createdBy"]),
+  // ADD to convex/schema.ts, alongside antonymSets.
+  wordRelationSets: defineTable({
+    topic: v.string(),
+    groups: v.array(
+      v.object({
+        word: v.string(),
+        synonymOptions: v.array(v.string()), // exactly 4
+        correctSynonymIndex: v.number(),
+        antonymOptions: v.array(v.string()), // exactly 4
+        correctAntonymIndex: v.number(),
+        debateQuestion: v.string(),
+      }),
+    ), // exactly 6
+    discussionQuestions: v.array(v.string()), // exactly 15
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_creator", ["createdBy"]),
 });
