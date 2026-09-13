@@ -461,6 +461,319 @@ export function assertGeneratedTenseConversionSet(
   return { topic: v.topic, sentences: v.sentences };
 }
 
-// NOTE: this file already has `isTense` (private helper next to
-// assertGeneratedTenseSet) -- reuse it rather than redeclaring it. If you
-// named it differently there, just match the name.
+// ADD to types/lessons.ts, below GeneratedLifeSituationsSet /
+// assertGeneratedLifeSituationsSet. Reuses isString / isStringArray already
+// defined at the top of this file.
+
+export interface RelatedExpression {
+  phrase: string;
+  meaning: string;
+  example: string;
+}
+
+export interface ChoicePair {
+  optionA: string;
+  optionB: string;
+}
+
+export interface GeneratedIdiomSet {
+  topic: string; // the input topic, or a short label if none was given
+  idiom: string; // the idiom itself, e.g. "Off the Record"
+  goal: string; // one sentence: "Today's Goal"
+  origin: string; // 2-4 sentences: where the idiom comes from / why it's used
+  example: string; // one natural example sentence using the idiom
+  relatedExpressions: RelatedExpression[]; // exactly 2
+  choicePrompt: string; // the umbrella question, e.g. "What Should Be Kept Off the Record?"
+  choicePairs: ChoicePair[]; // exactly 3
+  standScaleLabels: string[]; // exactly 5, ordered from one extreme to the other
+  standQuestions: string[]; // exactly 3
+}
+
+function isRelatedExpression(value: unknown): value is RelatedExpression {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return isString(v.phrase) && isString(v.meaning) && isString(v.example);
+}
+
+function isChoicePair(value: unknown): value is ChoicePair {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return isString(v.optionA) && isString(v.optionB);
+}
+
+export function assertGeneratedIdiomSet(value: unknown): GeneratedIdiomSet {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("Idiom JSON was not an object");
+  }
+  const v = value as Record<string, unknown>;
+  if (!isString(v.topic)) throw new Error("Idiom JSON missing string 'topic'");
+  if (!isString(v.idiom)) throw new Error("Idiom JSON missing string 'idiom'");
+  if (!isString(v.goal)) throw new Error("Idiom JSON missing string 'goal'");
+  if (!isString(v.origin))
+    throw new Error("Idiom JSON missing string 'origin'");
+  if (!isString(v.example))
+    throw new Error("Idiom JSON missing string 'example'");
+  if (
+    !Array.isArray(v.relatedExpressions) ||
+    v.relatedExpressions.length === 0 ||
+    !v.relatedExpressions.every(isRelatedExpression)
+  ) {
+    throw new Error("Idiom JSON has invalid 'relatedExpressions'");
+  }
+  if (!isString(v.choicePrompt)) {
+    throw new Error("Idiom JSON missing string 'choicePrompt'");
+  }
+  if (
+    !Array.isArray(v.choicePairs) ||
+    v.choicePairs.length === 0 ||
+    !v.choicePairs.every(isChoicePair)
+  ) {
+    throw new Error("Idiom JSON has invalid 'choicePairs'");
+  }
+  if (!isStringArray(v.standScaleLabels) || v.standScaleLabels.length !== 5) {
+    throw new Error(
+      "Idiom JSON has invalid 'standScaleLabels' (need exactly 5)",
+    );
+  }
+  if (!isStringArray(v.standQuestions)) {
+    throw new Error("Idiom JSON has invalid 'standQuestions'");
+  }
+  return {
+    topic: v.topic,
+    idiom: v.idiom,
+    goal: v.goal,
+    origin: v.origin,
+    example: v.example,
+    relatedExpressions: v.relatedExpressions,
+    choicePrompt: v.choicePrompt,
+    choicePairs: v.choicePairs,
+    standScaleLabels: v.standScaleLabels,
+    standQuestions: v.standQuestions,
+  };
+}
+
+// ADD to types/lessons.ts, below assertGeneratedIdiomSet (or wherever your
+// idiom types landed). Reuses isString / isStringArray already defined at
+// the top of this file.
+
+export interface SynonymGroup {
+  concept: string; // the base idea, e.g. "Angry"
+  spectrumLabel: string; // describes the two ends, e.g. "Mild -> Intense"
+  words: string[]; // exactly 5, in CORRECT order from one end to the other
+  connotationNote: string; // one sentence on why the words aren't interchangeable
+  fillBlankSentence: string; // one sentence containing "___" where a word fits
+  correctWordIndex: number; // index into `words` -- the best fit for the blank
+  debateQuestion: string; // one discussion/debate question built from the connotation gap
+}
+
+export interface GeneratedSynonymSet {
+  topic: string;
+  groups: SynonymGroup[]; // exactly 5
+  discussionQuestions: string[]; // exactly 15, general topic questions mixing in the vocabulary
+}
+
+function isSynonymGroup(value: unknown): value is SynonymGroup {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    isString(v.concept) &&
+    isString(v.spectrumLabel) &&
+    isStringArray(v.words) &&
+    v.words.length === 5 &&
+    isString(v.connotationNote) &&
+    isString(v.fillBlankSentence) &&
+    typeof v.correctWordIndex === "number" &&
+    Number.isInteger(v.correctWordIndex) &&
+    v.correctWordIndex >= 0 &&
+    v.correctWordIndex < v.words.length &&
+    isString(v.debateQuestion)
+  );
+}
+
+export function assertGeneratedSynonymSet(value: unknown): GeneratedSynonymSet {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("Synonym JSON was not an object");
+  }
+  const v = value as Record<string, unknown>;
+  if (!isString(v.topic)) {
+    throw new Error("Synonym JSON missing string 'topic'");
+  }
+  if (
+    !Array.isArray(v.groups) ||
+    v.groups.length === 0 ||
+    !v.groups.every(isSynonymGroup)
+  ) {
+    throw new Error("Synonym JSON has invalid 'groups'");
+  }
+  if (!isStringArray(v.discussionQuestions)) {
+    throw new Error("Synonym JSON has invalid 'discussionQuestions'");
+  }
+  return {
+    topic: v.topic,
+    groups: v.groups,
+    discussionQuestions: v.discussionQuestions,
+  };
+}
+
+// ADD to types/lessons.ts, below assertGeneratedSynonymSet. Reuses isString
+// / isStringArray already defined at the top of this file.
+
+export interface AntonymPair {
+  word: string;
+  antonym: string;
+  exampleSentence: string; // one sentence using both words to contrast them
+}
+
+export interface AntonymAnalogy {
+  pairIndexA: number; // index into `pairs` -- the "given" relationship
+  pairIndexB: number; // index into `pairs` -- the word being asked about
+  options: string[]; // exactly 4, one of which is pairs[pairIndexB].antonym
+  correctIndex: number; // index into `options`
+}
+
+export interface GeneratedAntonymSet {
+  topic: string;
+  pairs: AntonymPair[]; // exactly 8
+  analogies: AntonymAnalogy[]; // exactly 5
+}
+
+function isAntonymPair(value: unknown): value is AntonymPair {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return isString(v.word) && isString(v.antonym) && isString(v.exampleSentence);
+}
+
+function isAntonymAnalogy(
+  value: unknown,
+  pairsLength: number,
+): value is AntonymAnalogy {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  if (
+    typeof v.pairIndexA !== "number" ||
+    !Number.isInteger(v.pairIndexA) ||
+    v.pairIndexA < 0 ||
+    v.pairIndexA >= pairsLength
+  ) {
+    return false;
+  }
+  if (
+    typeof v.pairIndexB !== "number" ||
+    !Number.isInteger(v.pairIndexB) ||
+    v.pairIndexB < 0 ||
+    v.pairIndexB >= pairsLength ||
+    v.pairIndexB === v.pairIndexA
+  ) {
+    return false;
+  }
+  if (!isStringArray(v.options) || v.options.length !== 4) return false;
+  return (
+    typeof v.correctIndex === "number" &&
+    Number.isInteger(v.correctIndex) &&
+    v.correctIndex >= 0 &&
+    v.correctIndex < v.options.length
+  );
+}
+
+export function assertGeneratedAntonymSet(value: unknown): GeneratedAntonymSet {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("Antonym JSON was not an object");
+  }
+  const v = value as Record<string, unknown>;
+  if (!isString(v.topic)) {
+    throw new Error("Antonym JSON missing string 'topic'");
+  }
+  if (
+    !Array.isArray(v.pairs) ||
+    v.pairs.length !== 8 ||
+    !v.pairs.every(isAntonymPair)
+  ) {
+    throw new Error("Antonym JSON has invalid 'pairs' (need exactly 8)");
+  }
+  const pairsLength = v.pairs.length;
+  if (
+    !Array.isArray(v.analogies) ||
+    v.analogies.length === 0 ||
+    !v.analogies.every((a) => isAntonymAnalogy(a, pairsLength))
+  ) {
+    throw new Error("Antonym JSON has invalid 'analogies'");
+  }
+  return {
+    topic: v.topic,
+    pairs: v.pairs,
+    analogies: v.analogies,
+  };
+}
+// ADD to types/lessons.ts, below assertGeneratedAntonymSet. Reuses isString
+// / isStringArray already defined at the top of this file.
+
+export interface WordRelationGroup {
+  word: string; // the base word
+  synonymOptions: string[]; // exactly 4, one of which means the same as `word`
+  correctSynonymIndex: number; // index into synonymOptions
+  antonymOptions: string[]; // exactly 4, one of which means the opposite of `word`
+  correctAntonymIndex: number; // index into antonymOptions
+  debateQuestion: string; // built by comparing the correct synonym and antonym
+}
+
+export interface GeneratedWordRelationSet {
+  topic: string;
+  groups: WordRelationGroup[]; // exactly 6
+  discussionQuestions: string[]; // exactly 15
+}
+
+function isWordRelationGroup(value: unknown): value is WordRelationGroup {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  if (!isString(v.word)) return false;
+  if (!isStringArray(v.synonymOptions) || v.synonymOptions.length !== 4) {
+    return false;
+  }
+  if (
+    typeof v.correctSynonymIndex !== "number" ||
+    !Number.isInteger(v.correctSynonymIndex) ||
+    v.correctSynonymIndex < 0 ||
+    v.correctSynonymIndex >= v.synonymOptions.length
+  ) {
+    return false;
+  }
+  if (!isStringArray(v.antonymOptions) || v.antonymOptions.length !== 4) {
+    return false;
+  }
+  if (
+    typeof v.correctAntonymIndex !== "number" ||
+    !Number.isInteger(v.correctAntonymIndex) ||
+    v.correctAntonymIndex < 0 ||
+    v.correctAntonymIndex >= v.antonymOptions.length
+  ) {
+    return false;
+  }
+  return isString(v.debateQuestion);
+}
+
+export function assertGeneratedWordRelationSet(
+  value: unknown,
+): GeneratedWordRelationSet {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("Word relation JSON was not an object");
+  }
+  const v = value as Record<string, unknown>;
+  if (!isString(v.topic)) {
+    throw new Error("Word relation JSON missing string 'topic'");
+  }
+  if (
+    !Array.isArray(v.groups) ||
+    v.groups.length !== 6 ||
+    !v.groups.every(isWordRelationGroup)
+  ) {
+    throw new Error("Word relation JSON has invalid 'groups' (need exactly 6)");
+  }
+  if (!isStringArray(v.discussionQuestions)) {
+    throw new Error("Word relation JSON has invalid 'discussionQuestions'");
+  }
+  return {
+    topic: v.topic,
+    groups: v.groups,
+    discussionQuestions: v.discussionQuestions,
+  };
+}

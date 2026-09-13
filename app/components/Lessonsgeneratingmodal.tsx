@@ -17,6 +17,9 @@ import {
   ListChecks,
   Sparkles,
   Clock,
+  Layers,
+  ArrowLeftRight,
+  GitCompare,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
@@ -32,6 +35,24 @@ const GRAMMAR_STEPS = [
   { icon: MessagesSquare, label: "Writing quiz questions" },
   { icon: Sparkles, label: "Polishing the breakdown" },
 ];
+const WORD_RELATIONS_STEPS = [
+  { icon: BookOpen, label: "Picking base words" },
+  { icon: ListChecks, label: "Writing synonym & antonym choices" },
+  { icon: MessagesSquare, label: "Writing debate questions" },
+  { icon: Sparkles, label: "Polishing the set" },
+];
+const SYNONYMS_STEPS = [
+  { icon: BookOpen, label: "Building synonym spectrums" },
+  { icon: ListChecks, label: "Writing fill-in-the-blank checks" },
+  { icon: MessagesSquare, label: "Writing debate questions" },
+  { icon: Sparkles, label: "Polishing the set" },
+];
+const ANTONYMS_STEPS = [
+  { icon: BookOpen, label: "Pairing up opposites" },
+  { icon: ListChecks, label: "Writing example sentences" },
+  { icon: MessagesSquare, label: "Building analogy questions" },
+  { icon: Sparkles, label: "Polishing the set" },
+];
 
 const TENSE_CONVERSION_STEPS = [
   { icon: BookOpen, label: "Writing example sentences" },
@@ -45,6 +66,13 @@ const TENSES_STEPS = [
   { icon: Clock, label: "Shifting sentences across tenses" },
   { icon: ListChecks, label: "Writing tense-naming questions" },
   { icon: Sparkles, label: "Polishing the set" },
+];
+
+const IDIOMS_STEPS = [
+  { icon: BookOpen, label: "Picking an idiom" },
+  { icon: MessagesSquare, label: "Writing the origin story" },
+  { icon: ListChecks, label: "Building the choices & scale" },
+  { icon: Sparkles, label: "Polishing the lesson" },
 ];
 
 const DEBATE_STEPS = [
@@ -73,11 +101,35 @@ const COPY = {
     icon: BookOpen,
     steps: GRAMMAR_STEPS,
   },
+  wordRelations: {
+    title: "Comparing word relations",
+    subtitle: "Building your synonym vs antonym set",
+    icon: GitCompare, // import GitCompare from lucide-react in this file too
+    steps: WORD_RELATIONS_STEPS,
+  },
+  synonyms: {
+    title: "Sorting shades of meaning",
+    subtitle: "Building your synonym spectrums",
+    icon: Layers, // import Layers from lucide-react in this file too
+    steps: SYNONYMS_STEPS,
+  },
+  antonyms: {
+    title: "Pairing up opposites",
+    subtitle: "Building your antonym match",
+    icon: ArrowLeftRight, // import ArrowLeftRight from lucide-react in this file too
+    steps: ANTONYMS_STEPS,
+  },
   tenses: {
     title: "Writing your tenses set",
     subtitle: "Shifting each sentence across five tenses",
     icon: Clock,
     steps: TENSES_STEPS,
+  },
+  idioms: {
+    title: "Finding your idiom",
+    subtitle: "Building your idiom lesson",
+    icon: BookOpen,
+    steps: IDIOMS_STEPS,
   },
   tenseConversion: {
     title: "Writing your conversion set",
@@ -125,7 +177,16 @@ export function LessonGeneratingModal({
   variant = "lesson",
 }: {
   open: boolean;
-  variant?: "lesson" | "debate" | "grammar" | "tenses" | "tenseConversion";
+  variant?:
+    | "lesson"
+    | "debate"
+    | "grammar"
+    | "tenses"
+    | "tenseConversion"
+    | "idioms"
+    | "synonyms"
+    | "antonyms"
+    | "wordRelations";
 }) {
   const { title, subtitle, icon: CoreIcon, steps } = COPY[variant];
   const reduceMotion = useReducedMotion();
