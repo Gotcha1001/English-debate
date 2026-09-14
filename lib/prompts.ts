@@ -471,3 +471,56 @@ Requirements:
 Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
 ${WORD_RELATION_JSON_SHAPE}`;
 }
+
+// ADD to lib/prompts.ts, below buildWordRelationsPrompt. Reuses Difficulty
+// and DIFFICULTY_INSTRUCTIONS already defined in this file.
+
+const PUN_JSON_SHAPE = `{
+  "topic": string,
+  "puns": [                              // exactly 10
+    {
+      "setup": string,                  // a short build-up line or question that sets up the joke
+      "punchline": string,              // the pun payoff -- one witty line
+      "distractors": [string, string, string], // exactly 3 wrong-but-plausible punchlines
+      "explanation": string,            // one short sentence on the wordplay mechanic (double meaning, homophone, etc.)
+      "groanRating": number             // 1-5, how groan-worthy/cheesy it is (5 = ultimate dad joke)
+    }
+  ],
+  "discussionQuestions": [string]       // exactly 15, general questions about humor, wordplay, or the topic
+}`;
+
+/**
+ * "Pun Lab" generator -- standalone, playful page. Builds 10 puns around a
+ * topic (setup + reveal-on-tap punchline + a one-line explanation of the
+ * wordplay + a "groan rating" for fun), plus 15 general discussion
+ * questions about humor and language so it doubles as speaking practice.
+ */
+export function buildPunsPrompt(
+  topic?: string,
+  difficulty?: Difficulty,
+): string {
+  const topicInstruction = topic
+    ? `The topic is: "${topic}". Base every pun on vocabulary or ideas connected to this topic.`
+    : `No topic was given -- pick a broad, fun, everyday theme (e.g. food, animals, weather, technology) and put a short label for it in the "topic" field.`;
+
+  const difficultyInstruction =
+    DIFFICULTY_INSTRUCTIONS[difficulty ?? "intermediate"];
+
+  return `You are a witty ESL teacher building a lighthearted "Pun Lab" speaking-practice page for adult English learners.
+
+${topicInstruction}
+
+Requirements:
+- Generate exactly 10 puns connected to the topic. ${difficultyInstruction}
+- "setup": a short line or question that primes the listener for the joke, without giving away the punchline.
+- "punchline": the pun itself -- genuinely funny wordplay (double meanings, homophones, or idiom twists), not just a random sentence.
+- "distractors": exactly 3 other possible punchlines for the same setup that are plausible but wrong -- similar length and tone to the real punchline, tied to the same topic, but without the actual wordplay. Avoid decoys that are obviously silly, off-topic, or grammatically broken; they should tempt someone who hasn't spotted the pun yet.
+- "explanation": one short, clear sentence explaining the wordplay mechanic for a learner who might miss it (e.g. "This works because 'flour' and 'flower' sound the same.").
+- "groanRating": your honest 1-5 rating of how cheesy/groan-worthy the pun is (1 = mild chuckle, 5 = classic dad-joke groan).
+- Vary the type of wordplay across the 10 puns -- don't repeat the same joke structure back to back.
+- Keep the English clear enough that a learner can follow the joke even if the wordplay itself takes a moment to land.
+- "discussionQuestions": exactly 15 short, open discussion questions (under 20 words each) about humor, wordplay, and language in general -- e.g. whether puns translate well between languages, whether the learner enjoys wordplay, or a favorite joke in their own language.
+
+Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
+${PUN_JSON_SHAPE}`;
+}

@@ -20,6 +20,8 @@ import type * as lessonData from "../lessonData.js";
 import type * as lessons from "../lessons.js";
 import type * as lifeSituations from "../lifeSituations.js";
 import type * as lifeSituationsData from "../lifeSituationsData.js";
+import type * as puns from "../puns.js";
+import type * as punsData from "../punsData.js";
 import type * as quickQuestions from "../quickQuestions.js";
 import type * as quickQuestionsData from "../quickQuestionsData.js";
 import type * as synonyms from "../synonyms.js";
@@ -51,6 +53,8 @@ declare const fullApi: ApiFromModules<{
   lessons: typeof lessons;
   lifeSituations: typeof lifeSituations;
   lifeSituationsData: typeof lifeSituationsData;
+  puns: typeof puns;
+  punsData: typeof punsData;
   quickQuestions: typeof quickQuestions;
   quickQuestionsData: typeof quickQuestionsData;
   synonyms: typeof synonyms;

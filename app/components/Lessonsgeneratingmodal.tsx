@@ -35,6 +35,12 @@ const GRAMMAR_STEPS = [
   { icon: MessagesSquare, label: "Writing quiz questions" },
   { icon: Sparkles, label: "Polishing the breakdown" },
 ];
+const PUNS_STEPS = [
+  { icon: BookOpen, label: "Brainstorming wordplay" },
+  { icon: ListChecks, label: "Writing setups & punchlines" },
+  { icon: MessagesSquare, label: "Writing discussion questions" },
+  { icon: Sparkles, label: "Polishing the set" },
+];
 const WORD_RELATIONS_STEPS = [
   { icon: BookOpen, label: "Picking base words" },
   { icon: ListChecks, label: "Writing synonym & antonym choices" },
@@ -100,6 +106,12 @@ const COPY = {
     subtitle: "Building your grammar breakdown",
     icon: BookOpen,
     steps: GRAMMAR_STEPS,
+  },
+  puns: {
+    title: "Cooking up puns",
+    subtitle: "Building your Pun Lab set",
+    icon: Sparkles,
+    steps: PUNS_STEPS,
   },
   wordRelations: {
     title: "Comparing word relations",
@@ -186,7 +198,8 @@ export function LessonGeneratingModal({
     | "idioms"
     | "synonyms"
     | "antonyms"
-    | "wordRelations";
+    | "wordRelations"
+    | "puns";
 }) {
   const { title, subtitle, icon: CoreIcon, steps } = COPY[variant];
   const reduceMotion = useReducedMotion();

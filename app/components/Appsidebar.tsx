@@ -22,6 +22,7 @@ import {
   Layers,
   ArrowLeftRight,
   GitCompare,
+  Laugh,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { href: "/synonyms", label: "Synonyms", icon: Layers }, // NEW
   { href: "/antonyms", label: "Antonyms", icon: ArrowLeftRight }, // NEW
   { href: "/word-relations", label: "Word Relations", icon: GitCompare }, // NEW
+  { href: "/puns", label: "Pun Lab", icon: Laugh }, // NEW
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
