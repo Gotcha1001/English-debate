@@ -246,4 +246,20 @@ export default defineSchema({
     createdBy: v.id("users"),
     createdAt: v.number(),
   }).index("by_creator", ["createdBy"]),
+  // ADD to convex/schema.ts, alongside wordRelationSets.
+  punSets: defineTable({
+    topic: v.string(),
+    puns: v.array(
+      v.object({
+        setup: v.string(),
+        punchline: v.string(),
+        distractors: v.array(v.string()),
+        explanation: v.string(),
+        groanRating: v.number(), // 1-5
+      }),
+    ), // exactly 10
+    discussionQuestions: v.array(v.string()), // exactly 15
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_creator", ["createdBy"]),
 });

@@ -777,3 +777,67 @@ export function assertGeneratedWordRelationSet(
     discussionQuestions: v.discussionQuestions,
   };
 }
+
+// ADD to types/lessons.ts, below assertGeneratedWordRelationSet (or wherever
+// your other standalone-page types live). Reuses isString / isStringArray
+// already defined at the top of this file.
+
+export interface PunItem {
+  setup: string; // the build-up line or question that sets up the joke
+  punchline: string; // the pun / wordplay payoff
+  explanation: string; // one short sentence on HOW the wordplay works (the double meaning / homophone)
+  distractors: string[];
+  groanRating: number; // 1-5, how groan-worthy / cheesy the pun is (5 = maximum dad-joke energy)
+}
+
+export interface GeneratedPunSet {
+  topic: string; // the input topic, or a short label if none was given
+  puns: PunItem[]; // exactly 10
+  discussionQuestions: string[]; // exactly 15, about wordplay/humor/language in general
+}
+
+function isPunItem(value: unknown): value is PunItem {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    isString(v.setup) &&
+    isString(v.punchline) &&
+    isStringArray(v.distractors) &&
+    v.distractors.length === 3 &&
+    isString(v.explanation) &&
+    typeof v.groanRating === "number" &&
+    Number.isInteger(v.groanRating) &&
+    v.groanRating >= 1 &&
+    v.groanRating <= 5
+  );
+}
+
+export function assertGeneratedPunSet(value: unknown): GeneratedPunSet {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("Pun JSON was not an object");
+  }
+  const v = value as Record<string, unknown>;
+  if (!isString(v.topic)) {
+    throw new Error("Pun JSON missing string 'topic'");
+  }
+  if (
+    !Array.isArray(v.puns) ||
+    v.puns.length !== 10 ||
+    !v.puns.every(isPunItem)
+  ) {
+    throw new Error("Pun JSON has invalid 'puns' (need exactly 10)");
+  }
+  if (
+    !isStringArray(v.discussionQuestions) ||
+    v.discussionQuestions.length !== 15
+  ) {
+    throw new Error(
+      "Pun JSON has invalid 'discussionQuestions' (need exactly 15)",
+    );
+  }
+  return {
+    topic: v.topic,
+    puns: v.puns,
+    discussionQuestions: v.discussionQuestions,
+  };
+}
