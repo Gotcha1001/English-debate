@@ -75,6 +75,8 @@ import {
   GrammarSentenceCard,
   PartOfSpeechLegend,
 } from "@/app/components/Grammarsentencecard";
+import { useColorTheme } from "@/app/context/ColorThemeContext";
+import type { ColorTheme } from "@/lib/colorThemes";
 
 /* ---------- matrix rain + orbitals ---------- */
 const READOUTS = [
@@ -108,8 +110,9 @@ const ORBITALS = [
   { top: "88%", left: "40%", size: 9, delay: 1.1 },
 ];
 
-function MatrixBackground() {
+function MatrixBackground({ theme }: { theme: ColorTheme }) {
   const reduceMotion = useReducedMotion();
+  const { hex400, shades } = theme;
 
   return (
     <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -121,8 +124,7 @@ function MatrixBackground() {
             className="absolute top-0 flex flex-col gap-7 font-[family-name:var(--font-hud)] text-[10px] uppercase tracking-wider"
             style={{
               left: col.left,
-              color:
-                i % 2 === 0 ? "rgba(34,211,238,0.45)" : "rgba(34,211,238,0.25)",
+              color: i % 2 === 0 ? `${hex400}73` : `${hex400}40`,
               maskImage:
                 "linear-gradient(to bottom, transparent, black 12%, black 78%, transparent)",
               WebkitMaskImage:
@@ -145,18 +147,18 @@ function MatrixBackground() {
         ))}
       </div>
 
-      {/* cyan glowing orbitals */}
+      {/* glowing orbitals */}
       {ORBITALS.map((o, i) => (
         <motion.span
           key={i}
-          className="absolute rounded-full bg-cyan-300"
+          className="absolute rounded-full"
           style={{
             top: o.top,
             left: o.left,
             width: o.size,
             height: o.size,
-            boxShadow:
-              "0 0 16px 4px rgba(34,211,238,0.55), 0 0 32px 8px rgba(34,211,238,0.25)",
+            backgroundColor: shades[300],
+            boxShadow: `0 0 16px 4px ${hex400}8c, 0 0 32px 8px ${hex400}40`,
           }}
           animate={
             reduceMotion
@@ -183,10 +185,12 @@ export default function GrammarSetPage() {
   const set = useQuery(api.grammarData.getGrammarSet, {
     id: params.id as Id<"grammarSets">,
   });
+  const { theme } = useColorTheme();
+  const { hex400 } = theme;
 
   if (set === undefined) {
     return (
-      <p className="text-sm text-slate-500 dark:text-cyan-200/50">
+      <p className="text-sm text-slate-500 dark:text-stone-500">
         Loading breakdown...
       </p>
     );
@@ -194,7 +198,7 @@ export default function GrammarSetPage() {
 
   if (set === null) {
     return (
-      <p className="text-sm text-slate-500 dark:text-cyan-200/50">
+      <p className="text-sm text-slate-500 dark:text-stone-500">
         Grammar breakdown not found.
       </p>
     );
@@ -207,17 +211,17 @@ export default function GrammarSetPage() {
 
   return (
     <div className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
-      <MatrixBackground />
+      <MatrixBackground theme={theme} />
 
       <div className="relative z-10 mx-auto max-w-3xl space-y-5 pb-16">
         <header className="mb-2">
-          <p className="text-sm font-medium text-cyan-700 dark:text-cyan-400">
+          <p className="text-sm font-medium" style={{ color: hex400 }}>
             Grammar Breakdown
           </p>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-cyan-50">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-stone-50">
             {set.topic}
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-cyan-200/40">
+          <p className="mt-1 text-sm text-slate-500 dark:text-stone-500">
             {set.sentences.length} sentences · {totalQuestions} quiz questions
           </p>
         </header>

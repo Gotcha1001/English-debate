@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { HudPanel, HudLabel } from "./HudPanel";
+import { useColorTheme } from "@/app/context/ColorThemeContext";
 
 interface AntonymPairData {
   word: string;
@@ -26,6 +27,8 @@ function shuffleOnce<T>(arr: T[]): T[] {
  * A correct pair locks green and both buttons disable; a wrong pair flashes
  * red for a moment, then both sides deselect so the learner can retry. */
 export function AntonymMatchGame({ pairs }: AntonymMatchGameProps) {
+  const { theme } = useColorTheme();
+  const { hex400, shades } = theme;
   const leftItems = useMemo(
     () => shuffleOnce(pairs.map((p) => p.word)),
     [pairs],
@@ -41,6 +44,7 @@ export function AntonymMatchGame({ pairs }: AntonymMatchGameProps) {
     left: string;
     right: string;
   } | null>(null);
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
   const isMatch = (word: string, antonym: string) =>
     pairs.some((p) => p.word === word && p.antonym === antonym);
@@ -83,10 +87,51 @@ export function AntonymMatchGame({ pairs }: AntonymMatchGameProps) {
 
   const allMatched = matched.size === pairs.length;
 
+  const tileStyle = (opts: {
+    isDone: boolean;
+    isSelected: boolean;
+    isWrong: boolean;
+    isHovered: boolean;
+  }) => {
+    const { isDone, isSelected, isWrong, isHovered } = opts;
+    if (isWrong) return undefined; // handled via className (red is semantic, not theme)
+    if (isDone) {
+      return {
+        borderColor: `${hex400}4d`,
+        backgroundColor: `${hex400}0d`,
+        color: `${hex400}80`,
+      };
+    }
+    if (isSelected) {
+      return {
+        borderColor: hex400,
+        backgroundColor: `${hex400}26`,
+        color: "#fafaf9",
+      };
+    }
+    return {
+      borderColor: isHovered ? `${hex400}66` : `${hex400}26`,
+      backgroundColor: isHovered ? `${hex400}1a` : undefined,
+    };
+  };
+
+  const tileClassName = (opts: {
+    isDone: boolean;
+    isSelected: boolean;
+    isWrong: boolean;
+  }) => {
+    const { isDone, isSelected, isWrong } = opts;
+    const base =
+      "rounded-lg border px-3 py-2 text-sm font-medium transition-all";
+    if (isWrong) return `${base} border-red-400 bg-red-500/10 text-red-300`;
+    if (isDone || isSelected) return base;
+    return `${base} text-stone-200/80`;
+  };
+
   return (
     <HudPanel className="p-5">
       <HudLabel>Match the Opposites</HudLabel>
-      <p className="mb-4 text-sm text-cyan-200/60">
+      <p className="mb-4 text-sm text-stone-400">
         Tap a word, then tap its opposite. {matched.size}/{pairs.length}{" "}
         matched.
       </p>
@@ -96,21 +141,17 @@ export function AntonymMatchGame({ pairs }: AntonymMatchGameProps) {
             const isDone = matched.has(word);
             const isSelected = selectedLeft === word;
             const isWrong = wrongFlash?.left === word;
+            const isHovered = hoveredKey === `left-${word}`;
             return (
               <button
                 key={word}
                 type="button"
                 disabled={isDone}
                 onClick={() => handleLeftClick(word)}
-                className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${
-                  isDone
-                    ? "border-cyan-400/30 bg-cyan-400/5 text-cyan-400/50"
-                    : isWrong
-                      ? "border-red-400 bg-red-500/10 text-red-300"
-                      : isSelected
-                        ? "border-cyan-400 bg-cyan-400/15 text-cyan-50"
-                        : "border-cyan-400/15 text-cyan-100/80 hover:border-cyan-400/40 hover:bg-cyan-400/10"
-                }`}
+                onMouseEnter={() => setHoveredKey(`left-${word}`)}
+                onMouseLeave={() => setHoveredKey(null)}
+                className={tileClassName({ isDone, isSelected, isWrong })}
+                style={tileStyle({ isDone, isSelected, isWrong, isHovered })}
               >
                 {word}
                 {isDone && (
@@ -127,21 +168,17 @@ export function AntonymMatchGame({ pairs }: AntonymMatchGameProps) {
             );
             const isSelected = selectedRight === antonym;
             const isWrong = wrongFlash?.right === antonym;
+            const isHovered = hoveredKey === `right-${antonym}`;
             return (
               <button
                 key={antonym}
                 type="button"
                 disabled={isDone}
                 onClick={() => handleRightClick(antonym)}
-                className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${
-                  isDone
-                    ? "border-cyan-400/30 bg-cyan-400/5 text-cyan-400/50"
-                    : isWrong
-                      ? "border-red-400 bg-red-500/10 text-red-300"
-                      : isSelected
-                        ? "border-cyan-400 bg-cyan-400/15 text-cyan-50"
-                        : "border-cyan-400/15 text-cyan-100/80 hover:border-cyan-400/40 hover:bg-cyan-400/10"
-                }`}
+                onMouseEnter={() => setHoveredKey(`right-${antonym}`)}
+                onMouseLeave={() => setHoveredKey(null)}
+                className={tileClassName({ isDone, isSelected, isWrong })}
+                style={tileStyle({ isDone, isSelected, isWrong, isHovered })}
               >
                 {antonym}
                 {isDone && (
@@ -154,13 +191,14 @@ export function AntonymMatchGame({ pairs }: AntonymMatchGameProps) {
       </div>
       {allMatched && (
         <div className="mt-5 space-y-2">
-          <p className="text-sm font-semibold text-cyan-300">
+          <p className="text-sm font-semibold" style={{ color: hex400 }}>
             All matched! Here&apos;s each pair in context:
           </p>
           {pairs.map((p, i) => (
             <p
               key={i}
-              className="rounded-lg border border-cyan-400/10 bg-[#0a1219] p-2.5 text-sm text-cyan-100/80"
+              className="rounded-lg border bg-[#0a1219] p-2.5 text-sm text-stone-200/80"
+              style={{ borderColor: `${hex400}1a` }}
             >
               {p.exampleSentence}
             </p>

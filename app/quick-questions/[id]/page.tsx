@@ -1,68 +1,21 @@
-// "use client";
-
-// import { useParams } from "next/navigation";
-// import { useQuery } from "convex/react";
-// import { api } from "@/convex/_generated/api";
-// import type { Id } from "@/convex/_generated/dataModel";
-
-// export default function QuickQuestionsSetPage() {
-//   const params = useParams<{ id: string }>();
-//   const set = useQuery(api.quickQuestionsData.getQuickQuestionSet, {
-//     id: params.id as Id<"quickQuestionSets">,
-//   });
-
-//   if (set === undefined) {
-//     return (
-//       <p className="text-sm text-slate-500 dark:text-cyan-200/50">
-//         Loading questions…
-//       </p>
-//     );
-//   }
-//   if (set === null) {
-//     return (
-//       <p className="text-sm text-slate-500 dark:text-cyan-200/50">
-//         Question set not found.
-//       </p>
-//     );
-//   }
-
-//   return (
-//     <div className="mx-auto max-w-3xl pb-16">
-//       <header className="mb-8">
-//         <p className="text-sm font-medium text-cyan-700 dark:text-cyan-400">
-//           40 Questions
-//         </p>
-//         <h1 className="text-3xl font-bold text-slate-900 dark:text-cyan-50">
-//           {set.topic}
-//         </h1>
-//         <p className="mt-1 text-sm text-slate-500 dark:text-cyan-200/50">
-//           {set.questions.length} questions
-//         </p>
-//       </header>
-
-//       <ol className="space-y-2">
-//         {set.questions.map((question, i) => (
-//           <li
-//             key={i}
-//             className="flex gap-3 rounded-lg border border-slate-200 p-3 dark:border-cyan-400/10"
-//           >
-//             <span className="shrink-0 font-mono text-xs text-cyan-700 dark:text-cyan-400">
-//               {String(i + 1).padStart(2, "0")}
-//             </span>
-//             <span className="text-slate-900 dark:text-cyan-50">{question}</span>
-//           </li>
-//         ))}
-//       </ol>
-//     </div>
-//   );
-// }
 "use client";
 
 import { useParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { motion, useReducedMotion } from "framer-motion";
+import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useColorTheme } from "@/app/context/ColorThemeContext";
+import type { ColorTheme } from "@/lib/colorThemes";
+
+/** Append an alpha channel (0–1) to a #rrggbb hex color, e.g. alpha("#22d3ee", 0.4) -> "#22d3ee66" */
+function alpha(hex: string, a: number) {
+  const v = Math.round(a * 255)
+    .toString(16)
+    .padStart(2, "0");
+  return `${hex}${v}`;
+}
 
 /* ---------- denser matrix rain + orbitals ---------- */
 const READOUTS = [
@@ -99,8 +52,9 @@ const ORBITALS = [
   { top: "12%", left: "65%", size: 6, delay: 1.3 },
 ];
 
-function MatrixBackground() {
+function MatrixBackground({ theme }: { theme: ColorTheme }) {
   const reduceMotion = useReducedMotion();
+  const { hex400, shades } = theme;
 
   return (
     <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -115,16 +69,16 @@ function MatrixBackground() {
               fontSize: col.fontSize,
               color:
                 i % 3 === 0
-                  ? "rgba(34,211,238,0.55)"
+                  ? alpha(hex400, 0.55)
                   : i % 3 === 1
-                    ? "rgba(34,211,238,0.3)"
-                    : "rgba(103,232,249,0.2)",
+                    ? alpha(hex400, 0.3)
+                    : alpha(shades[300], 0.2),
               maskImage:
                 "linear-gradient(to bottom, transparent, black 8%, black 82%, transparent)",
               WebkitMaskImage:
                 "linear-gradient(to bottom, transparent, black 8%, black 82%, transparent)",
               textShadow:
-                i % 3 === 0 ? "0 0 8px rgba(34,211,238,0.6)" : undefined,
+                i % 3 === 0 ? `0 0 8px ${alpha(hex400, 0.6)}` : undefined,
             }}
             animate={reduceMotion ? undefined : { y: ["-50%", "150%"] }}
             transition={{
@@ -150,7 +104,13 @@ function MatrixBackground() {
       {/* scanline sweep */}
       {!reduceMotion && (
         <motion.div
-          className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent"
+          className="absolute left-0 right-0 h-px"
+          style={{
+            background: `linear-gradient(to right, transparent, ${alpha(
+              shades[300],
+              0.4,
+            )}, transparent)`,
+          }}
           animate={{ top: ["0%", "100%"] }}
           transition={{ duration: 4.5, repeat: Infinity, ease: "linear" }}
         />
@@ -160,14 +120,17 @@ function MatrixBackground() {
       {ORBITALS.map((o, i) => (
         <motion.span
           key={i}
-          className="absolute rounded-full bg-cyan-300"
+          className="absolute rounded-full"
           style={{
             top: o.top,
             left: o.left,
             width: o.size,
             height: o.size,
-            boxShadow:
-              "0 0 18px 5px rgba(34,211,238,0.6), 0 0 40px 12px rgba(34,211,238,0.25)",
+            backgroundColor: shades[300],
+            boxShadow: `0 0 18px 5px ${alpha(hex400, 0.6)}, 0 0 40px 12px ${alpha(
+              hex400,
+              0.25,
+            )}`,
           }}
           animate={
             reduceMotion
@@ -194,17 +157,20 @@ export default function QuickQuestionsSetPage() {
   const set = useQuery(api.quickQuestionsData.getQuickQuestionSet, {
     id: params.id as Id<"quickQuestionSets">,
   });
+  const { theme } = useColorTheme();
+  const { hex400, shades } = theme;
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   if (set === undefined) {
     return (
-      <p className="text-sm text-slate-500 dark:text-cyan-200/50">
+      <p className="text-sm text-slate-500 dark:text-stone-500">
         Loading questions…
       </p>
     );
   }
   if (set === null) {
     return (
-      <p className="text-sm text-slate-500 dark:text-cyan-200/50">
+      <p className="text-sm text-slate-500 dark:text-stone-500">
         Question set not found.
       </p>
     );
@@ -212,51 +178,66 @@ export default function QuickQuestionsSetPage() {
 
   return (
     <div className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
-      <MatrixBackground />
+      <MatrixBackground theme={theme} />
 
       <div className="relative z-10 mx-auto max-w-3xl pb-16">
         <header className="mb-8">
-          <p className="font-[family-name:var(--font-hud)] text-xs uppercase tracking-[0.25em] text-cyan-700 dark:text-cyan-400">
+          <p
+            className="font-[family-name:var(--font-hud)] text-xs uppercase tracking-[0.25em]"
+            style={{ color: hex400 }}
+          >
             40 Questions
           </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900 dark:text-cyan-50 dark:drop-shadow-[0_0_20px_rgba(34,211,238,0.35)]">
+          <h1
+            className="mt-1 text-3xl font-bold tracking-tight text-slate-900 dark:text-stone-50"
+            style={{ filter: `drop-shadow(0 0 20px ${alpha(hex400, 0.35)})` }}
+          >
             {set.topic}
           </h1>
-          <p className="mt-1 font-mono text-xs text-slate-500 dark:text-cyan-200/50">
+          <p className="mt-1 font-mono text-xs text-slate-500 dark:text-stone-500">
             {String(set.questions.length).padStart(2, "0")} units · free-talk
             protocol
           </p>
         </header>
 
         <ol className="space-y-2">
-          {set.questions.map((question, i) => (
-            <li
-              key={i}
-              className="
-                group flex gap-3 rounded-lg border border-slate-200 bg-white/80 p-3
-                backdrop-blur-sm transition-all duration-200
-                dark:border-cyan-400/10 dark:bg-[#0a1219]/75
-                hover:border-cyan-400/40 hover:bg-cyan-400/[0.06]
-                dark:hover:border-cyan-400/40 dark:hover:bg-cyan-400/10
-                dark:hover:shadow-[0_0_28px_-6px_rgba(34,211,238,0.5)]
-              "
-            >
-              <span
+          {set.questions.map((question, i) => {
+            const isHovered = hoveredIndex === i;
+            return (
+              <li
+                key={i}
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
                 className="
-                  shrink-0 font-mono text-xs tabular-nums
-                  text-cyan-700 transition-colors
-                  group-hover:text-cyan-500
-                  dark:text-cyan-400 dark:group-hover:text-cyan-300
-                  dark:group-hover:drop-shadow-[0_0_6px_rgba(34,211,238,0.8)]
+                  flex gap-3 rounded-lg border border-slate-200 bg-white/80 p-3
+                  backdrop-blur-sm transition-all duration-200
+                  dark:bg-[#0a1219]/75
                 "
+                style={{
+                  borderColor: alpha(hex400, isHovered ? 0.4 : 0.1),
+                  backgroundColor: isHovered ? alpha(hex400, 0.06) : undefined,
+                  boxShadow: isHovered
+                    ? `0 0 28px -6px ${alpha(hex400, 0.5)}`
+                    : undefined,
+                }}
               >
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <span className="text-slate-900 transition-colors dark:text-cyan-50 dark:group-hover:text-cyan-50">
-                {question}
-              </span>
-            </li>
-          ))}
+                <span
+                  className="shrink-0 font-mono text-xs tabular-nums transition-colors"
+                  style={{
+                    color: isHovered ? shades[300] : hex400,
+                    filter: isHovered
+                      ? `drop-shadow(0 0 6px ${alpha(hex400, 0.8)})`
+                      : undefined,
+                  }}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="text-slate-900 transition-colors dark:text-stone-50">
+                  {question}
+                </span>
+              </li>
+            );
+          })}
         </ol>
       </div>
     </div>

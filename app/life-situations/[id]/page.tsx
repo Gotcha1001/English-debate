@@ -7,6 +7,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { HudPanel } from "@/app/components/HudPanel";
+import { useColorTheme } from "@/app/context/ColorThemeContext";
+import type { ColorTheme } from "@/lib/colorThemes";
 
 /* ---------- matrix rain + orbitals ---------- */
 const READOUTS = [
@@ -40,7 +42,7 @@ const ORBITALS = [
   { top: "88%", left: "40%", size: 9, delay: 1.1 },
 ];
 
-function MatrixBackground() {
+function MatrixBackground({ hex400 }: { hex400: string }) {
   const reduceMotion = useReducedMotion();
 
   return (
@@ -53,8 +55,7 @@ function MatrixBackground() {
             className="absolute top-0 flex flex-col gap-7 font-[family-name:var(--font-hud)] text-[10px] uppercase tracking-wider"
             style={{
               left: col.left,
-              color:
-                i % 2 === 0 ? "rgba(34,211,238,0.45)" : "rgba(34,211,238,0.25)",
+              color: i % 2 === 0 ? `${hex400}73` : `${hex400}40`,
               maskImage:
                 "linear-gradient(to bottom, transparent, black 12%, black 78%, transparent)",
               WebkitMaskImage:
@@ -77,18 +78,18 @@ function MatrixBackground() {
         ))}
       </div>
 
-      {/* cyan glowing orbitals */}
+      {/* glowing orbitals */}
       {ORBITALS.map((o, i) => (
         <motion.span
           key={i}
-          className="absolute rounded-full bg-cyan-300"
+          className="absolute rounded-full"
           style={{
             top: o.top,
             left: o.left,
             width: o.size,
             height: o.size,
-            boxShadow:
-              "0 0 16px 4px rgba(34,211,238,0.55), 0 0 32px 8px rgba(34,211,238,0.25)",
+            backgroundColor: hex400,
+            boxShadow: `0 0 16px 4px ${hex400}8c, 0 0 32px 8px ${hex400}40`,
           }}
           animate={
             reduceMotion
@@ -114,39 +115,67 @@ function SituationCard({
   index,
   scenario,
   options,
+  hex400,
+  shades,
 }: {
   index: number;
   scenario: string;
   options: string[];
+  hex400: string;
+  shades: ColorTheme["shades"];
 }) {
   const [picked, setPicked] = useState<number | null>(null);
   return (
     <HudPanel className="p-4">
-      <p className="mb-3 text-cyan-50">
-        <span className="mr-2 text-cyan-500/60">{index + 1}.</span>
+      <p className="mb-3 text-stone-50">
+        <span className="mr-2" style={{ color: `${shades[500]}99` }}>
+          {index + 1}.
+        </span>
         {scenario}
       </p>
       <div className="flex flex-col gap-1.5">
-        {options.map((option, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => setPicked(i)}
-            className={`
-              rounded-md border px-3 py-1.5 text-left text-sm transition-all duration-200
-              ${
-                picked === i
-                  ? "border-cyan-400 bg-cyan-400/15 text-cyan-50 shadow-[0_0_20px_-4px_rgba(34,211,238,0.5)]"
-                  : "border-cyan-400/15 text-cyan-100/80 hover:border-cyan-400/40 hover:bg-cyan-400/10 hover:shadow-[0_0_18px_-4px_rgba(34,211,238,0.35)]"
+        {options.map((option, i) => {
+          const isPicked = picked === i;
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setPicked(i)}
+              className="rounded-md border px-3 py-1.5 text-left text-sm transition-all duration-200 text-stone-200/80"
+              style={
+                isPicked
+                  ? {
+                      borderColor: hex400,
+                      backgroundColor: `${hex400}26`,
+                      color: "#fafaf9",
+                      boxShadow: `0 0 20px -4px ${hex400}80`,
+                    }
+                  : {
+                      borderColor: `${hex400}26`,
+                    }
               }
-            `}
-          >
-            {option}
-          </button>
-        ))}
+              onMouseEnter={(e) => {
+                if (!isPicked) {
+                  e.currentTarget.style.borderColor = `${hex400}66`;
+                  e.currentTarget.style.backgroundColor = `${hex400}1a`;
+                  e.currentTarget.style.boxShadow = `0 0 18px -4px ${hex400}59`;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isPicked) {
+                  e.currentTarget.style.borderColor = `${hex400}26`;
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.boxShadow = "none";
+                }
+              }}
+            >
+              {option}
+            </button>
+          );
+        })}
       </div>
       {picked !== null && (
-        <p className="mt-3 text-xs text-cyan-200/50">
+        <p className="mt-3 text-xs text-stone-500">
           Now say why out loud — there&apos;s no right answer here.
         </p>
       )}
@@ -159,17 +188,19 @@ export default function LifeSituationSetPage() {
   const set = useQuery(api.lifeSituationsData.getLifeSituationSet, {
     id: params.id as Id<"lifeSituationSets">,
   });
+  const { theme } = useColorTheme();
+  const { hex400, shades } = theme;
 
   if (set === undefined) {
     return (
-      <p className="text-sm text-slate-500 dark:text-cyan-200/50">
+      <p className="text-sm text-slate-500 dark:text-stone-500">
         Loading scenarios...
       </p>
     );
   }
   if (set === null) {
     return (
-      <p className="text-sm text-slate-500 dark:text-cyan-200/50">
+      <p className="text-sm text-slate-500 dark:text-stone-500">
         Scenario set not found.
       </p>
     );
@@ -177,17 +208,20 @@ export default function LifeSituationSetPage() {
 
   return (
     <div className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
-      <MatrixBackground />
+      <MatrixBackground hex400={hex400} />
 
       <div className="relative z-10 mx-auto max-w-3xl space-y-4 pb-16">
         <header className="mb-4">
-          <p className="text-sm font-medium text-cyan-700 dark:text-cyan-400">
+          <p className="text-sm font-medium" style={{ color: hex400 }}>
             Life situations
           </p>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-cyan-50">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-stone-50">
             {set.topic}
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-cyan-200/40">
+          <p
+            className="mt-1 text-sm text-slate-500"
+            style={{ color: `${shades[300]}66` }}
+          >
             {set.situations.length} scenarios
           </p>
         </header>
@@ -198,6 +232,8 @@ export default function LifeSituationSetPage() {
             index={i}
             scenario={situation.scenario}
             options={situation.options}
+            hex400={hex400}
+            shades={shades}
           />
         ))}
       </div>

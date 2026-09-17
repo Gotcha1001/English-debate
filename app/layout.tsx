@@ -10,6 +10,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
 import Provider from "./provider";
 import { AppSidebar } from "./components/Appsidebar";
+import { ColorThemeProvider } from "./context/ColorThemeContext";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({
@@ -37,20 +38,23 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <ConvexClientProvider>
               <Provider>
-                <SidebarProvider>
-                  <AppSidebar />
-                  <SidebarInset>
-                    <Navbar />
-                    <main className="p-4 lg:p-6">
-                      {children}
-                      <Toaster
-                        theme="dark"
-                        position="bottom-right"
-                        richColors
-                      />
-                    </main>
-                  </SidebarInset>
-                </SidebarProvider>
+                <ColorThemeProvider>
+                  <SidebarProvider>
+                    <AppSidebar />
+                    <SidebarInset>
+                      <Navbar />
+                      <main className="p-4 lg:p-6">
+                        {children}
+                        <Toaster
+                          theme="dark"
+                          position="bottom-right"
+                          richColors
+                        />
+                      </main>
+                    </SidebarInset>
+                  </SidebarProvider>
+                </ColorThemeProvider>
+
                 <Toaster richColors />
               </Provider>
             </ConvexClientProvider>

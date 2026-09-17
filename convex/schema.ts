@@ -8,6 +8,7 @@ export default defineSchema({
     name: v.string(),
     imageUrl: v.optional(v.string()),
     role: v.union(v.literal("admin"), v.literal("user")),
+    colorTheme: v.optional(v.string()),
     preferences: v.optional(
       v.object({
         defaultDifficulty: v.optional(
