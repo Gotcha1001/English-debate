@@ -121,3 +121,17 @@ export const updateMyPreferences = mutation({
     });
   },
 });
+
+export const setColorTheme = mutation({
+  args: { colorTheme: v.string() },
+  handler: async (ctx, { colorTheme }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+    if (!existing) throw new Error("User not found");
+    await ctx.db.patch(existing._id, { colorTheme });
+  },
+});

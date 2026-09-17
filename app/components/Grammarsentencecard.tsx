@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { HudPanel } from "./HudPanel";
+import { useColorTheme } from "@/app/context/ColorThemeContext";
 
 export type PartOfSpeech =
   | "noun"
@@ -32,7 +33,8 @@ interface GrammarSentenceCardProps {
 }
 
 /** One style + short abbreviation per part of speech, shared by the
- * token chips and the legend so the two always stay in sync. */
+ * token chips and the legend so the two always stay in sync.
+ * These are categorical (not theme accent), so they stay fixed. */
 export const POS_STYLES: Record<
   PartOfSpeech,
   { label: string; className: string }
@@ -103,21 +105,30 @@ function QuizQuestion({
   answer: string;
 }) {
   const [revealed, setRevealed] = useState(false);
+  const { theme } = useColorTheme();
+  const { hex400, shades } = theme;
+
   return (
-    <li className="rounded-lg border border-cyan-400/10 bg-[#0a1219] p-3">
-      <p className="text-sm text-cyan-100/90">
-        <span className="mr-2 text-cyan-200/40">{index + 1}.</span>
+    <li
+      className="rounded-lg bg-[#0a1219] p-3"
+      style={{ border: `1px solid ${hex400}1a` }}
+    >
+      <p className="text-sm text-stone-100">
+        <span className="mr-2" style={{ color: `${shades[300]}66` }}>
+          {index + 1}.
+        </span>
         {question}
       </p>
       <button
         type="button"
         onClick={() => setRevealed((v) => !v)}
-        className="mt-2 text-xs font-medium text-cyan-400 hover:underline"
+        className="mt-2 text-xs font-medium hover:underline"
+        style={{ color: hex400 }}
       >
         {revealed ? "Hide answer" : "Show answer"}
       </button>
       {revealed && (
-        <p className="mt-1 text-sm font-medium text-cyan-50">{answer}</p>
+        <p className="mt-1 text-sm font-medium text-stone-50">{answer}</p>
       )}
     </li>
   );
@@ -131,10 +142,15 @@ export function GrammarSentenceCard({
   tokens,
   quiz,
 }: GrammarSentenceCardProps) {
+  const { theme } = useColorTheme();
+  const { hex400, shades } = theme;
+
   return (
     <HudPanel className="p-5">
-      <p className="mb-4 text-lg text-cyan-50">
-        <span className="mr-2 text-cyan-500/60">{index + 1}.</span>
+      <p className="mb-4 text-lg text-stone-50">
+        <span className="mr-2" style={{ color: `${shades[500]}99` }}>
+          {index + 1}.
+        </span>
         {sentence}
       </p>
 
@@ -155,7 +171,10 @@ export function GrammarSentenceCard({
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cyan-300/70">
+        <p
+          className="mb-2 text-xs font-semibold uppercase tracking-wide"
+          style={{ color: `${shades[300]}b3` }}
+        >
           Quiz
         </p>
         <ul className="space-y-2">

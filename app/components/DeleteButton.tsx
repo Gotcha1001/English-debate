@@ -1,6 +1,8 @@
+// app/components/DeleteButton.tsx
 "use client";
 
 import { Loader2, Trash2 } from "lucide-react";
+import { useColorTheme } from "@/app/context/ColorThemeContext";
 
 interface DeleteButtonProps {
   onDelete: () => void;
@@ -14,6 +16,9 @@ export function DeleteButton({
   isDeleting,
   label,
 }: DeleteButtonProps) {
+  const { theme } = useColorTheme();
+  const { shades } = theme;
+
   return (
     <button
       type="button"
@@ -27,7 +32,8 @@ export function DeleteButton({
           onDelete();
         }
       }}
-      className="shrink-0 rounded-md border border-transparent p-1.5 text-cyan-200/40 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
+      className="shrink-0 rounded-md border border-transparent p-1.5 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
+      style={{ color: `${shades[300]}66` }}
     >
       {isDeleting ? (
         <Loader2 className="h-4 w-4 animate-spin" />

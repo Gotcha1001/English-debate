@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { AntonymMatchGame } from "@/app/components/AntonymMatchGame";
 import { AntonymAnalogyCard } from "@/app/components/AntonymAnalogyCard";
+import { MatrixBackground } from "@/app/components/MatrixBackground";
 
 export default function AntonymSetPage() {
   const params = useParams<{ id: string }>();
@@ -26,31 +27,34 @@ export default function AntonymSetPage() {
     );
   }
   return (
-    <div className="mx-auto max-w-3xl space-y-5 pb-16">
-      <header className="mb-2">
-        <p className="text-sm font-medium text-cyan-700 dark:text-cyan-400">
-          Antonym Match
-        </p>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-cyan-50">
-          {set.topic}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-cyan-200/40">
-          {set.pairs.length} pairs &middot; {set.analogies.length} analogies
-        </p>
-      </header>
-      <AntonymMatchGame pairs={set.pairs} />
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-cyan-100/90">
-          Complete the Analogy
-        </h2>
-        {set.analogies.map((analogy, i) => (
-          <AntonymAnalogyCard
-            key={i}
-            index={i}
-            pairs={set.pairs}
-            data={analogy}
-          />
-        ))}
+    <div className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
+      <MatrixBackground />
+      <div className="relative z-10 mx-auto max-w-3xl space-y-5 pb-16">
+        <header className="mb-2">
+          <p className="text-sm font-medium text-cyan-700 dark:text-cyan-400">
+            Antonym Match
+          </p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-cyan-50">
+            {set.topic}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-cyan-200/40">
+            {set.pairs.length} pairs &middot; {set.analogies.length} analogies
+          </p>
+        </header>
+        <AntonymMatchGame pairs={set.pairs} />
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-cyan-100/90">
+            Complete the Analogy
+          </h2>
+          {set.analogies.map((analogy, i) => (
+            <AntonymAnalogyCard
+              key={i}
+              index={i}
+              pairs={set.pairs}
+              data={analogy}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
