@@ -1,17 +1,15 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import type { FunctionReference } from "convex/server";
 
-export function useDeleteSet<Args extends { id: string }>(
-  mutationRef: FunctionReference<"mutation", "public", Args, null>,
+// Shared body: tracks which row is being deleted and shows the retry toast.
+function useDeleteRunner<Args extends { id: string }>(
+  remove: (args: Args) => Promise<null>,
   itemLabel: string,
 ) {
-  const remove = useMutation(mutationRef) as unknown as (
-    args: Args,
-  ) => Promise<null>;
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const deleteItem = useCallback(
@@ -36,4 +34,30 @@ export function useDeleteSet<Args extends { id: string }>(
   );
 
   return { deleteItem, deletingId };
+}
+
+/** Delete via a plain Convex mutation (existing pages keep using this). */
+export function useDeleteSet<Args extends { id: string }>(
+  mutationRef: FunctionReference<"mutation", "public", Args, null>,
+  itemLabel: string,
+) {
+  const remove = useMutation(mutationRef) as unknown as (
+    args: Args,
+  ) => Promise<null>;
+  return useDeleteRunner(remove, itemLabel);
+}
+
+/**
+ * Delete via a Convex *action*. Use this for sets that own a Cloudinary
+ * image: only an action can call Cloudinary, so the action deletes the image
+ * first and then the row.
+ */
+export function useDeleteSetAction<Args extends { id: string }>(
+  actionRef: FunctionReference<"action", "public", Args, null>,
+  itemLabel: string,
+) {
+  const remove = useAction(actionRef) as unknown as (
+    args: Args,
+  ) => Promise<null>;
+  return useDeleteRunner(remove, itemLabel);
 }

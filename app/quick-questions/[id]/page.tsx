@@ -8,6 +8,8 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useColorTheme } from "@/app/context/ColorThemeContext";
 import type { ColorTheme } from "@/lib/colorThemes";
+import { LessonHeader } from "@/app/components/LessonHeader";
+import { useQuickQuestionHeader } from "@/hooks/useQuickQuestionHeader";
 
 /** Append an alpha channel (0–1) to a #rrggbb hex color, e.g. alpha("#22d3ee", 0.4) -> "#22d3ee66" */
 function alpha(hex: string, a: number) {
@@ -154,9 +156,10 @@ function MatrixBackground({ theme }: { theme: ColorTheme }) {
 
 export default function QuickQuestionsSetPage() {
   const params = useParams<{ id: string }>();
-  const set = useQuery(api.quickQuestionsData.getQuickQuestionSet, {
-    id: params.id as Id<"quickQuestionSets">,
-  });
+  const setId = params.id as Id<"quickQuestionSets">;
+  const set = useQuery(api.quickQuestionsData.get, { id: setId });
+  // Must sit above the early returns below (rules of hooks).
+  const header = useQuickQuestionHeader(setId);
   const { theme } = useColorTheme();
   const { hex400, shades } = theme;
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -182,24 +185,39 @@ export default function QuickQuestionsSetPage() {
       <MatrixBackground theme={theme} />
 
       <div className="relative z-10 mx-auto max-w-3xl pb-16">
-        <header className="mb-8">
+        <div className="mb-8">
           <p
             className="font-[family-name:var(--font-hud)] text-xs uppercase tracking-[0.25em]"
             style={{ color: hex400 }}
           >
             40 Questions
           </p>
-          <h1
-            className="mt-1 text-3xl font-bold tracking-tight text-slate-900 dark:text-stone-50"
-            style={{ filter: `drop-shadow(0 0 20px ${alpha(hex400, 0.35)})` }}
+
+          {/* Extra outer glow on top of HudPanel's own. `get` only returns
+              sets the signed-in user owns, so anyone who can see this page
+              can edit it. */}
+          <div
+            className="mt-3 rounded-xl"
+            style={{ boxShadow: `0 0 44px -12px ${alpha(hex400, 0.5)}` }}
           >
-            {set.topic}
-          </h1>
-          <p className="mt-1 font-mono text-xs text-slate-500 dark:text-stone-500">
+            <LessonHeader
+              title={set.topic}
+              learningObjective={set.learningObjective}
+              imageUrl={set.headerImage?.url}
+              editable
+              isUploadingImage={header.isImageBusy}
+              isSavingObjective={header.isSavingObjective}
+              onUploadImage={header.uploadImage}
+              onRemoveImage={header.removeImage}
+              onSaveObjective={header.saveObjective}
+            />
+          </div>
+
+          <p className="mt-3 font-mono text-xs text-slate-500 dark:text-stone-500">
             {String(set.questions.length).padStart(2, "0")} units · free-talk
             protocol
           </p>
-        </header>
+        </div>
 
         <ol className="space-y-2">
           {set.questions.map((question, i) => {

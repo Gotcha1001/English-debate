@@ -1,105 +1,151 @@
 import { v } from "convex/values";
 import {
-  internalMutation,
-  mutation,
   query,
-  type QueryCtx,
+  mutation,
+  internalMutation,
+  internalQuery,
 } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import type { QueryCtx } from "./_generated/server";
 
-async function getCurrentUser(ctx: QueryCtx) {
+const MAX_OBJECTIVE_LENGTH = 600;
+
+// --- auth helpers ------------------------------------------------------
+
+async function getUserIdOrNull(ctx: QueryCtx): Promise<Id<"users"> | null> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) return null;
-  return await ctx.db
+  const user = await ctx.db
     .query("users")
     .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
-    .first();
+    .unique();
+  return user?._id ?? null;
 }
 
-export const saveQuickQuestionSet = internalMutation({
-  args: {
-    topic: v.string(),
-    questions: v.array(v.string()),
-    createdBy: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    // No category on creation = "general discussion" (nothing lit up).
-    return await ctx.db.insert("quickQuestionSets", {
-      ...args,
-      createdAt: Date.now(),
-    });
-  },
-});
+async function requireUserId(ctx: QueryCtx): Promise<Id<"users">> {
+  const userId = await getUserIdOrNull(ctx);
+  if (!userId) throw new Error("Not authenticated");
+  return userId;
+}
 
-/** Quick question sets the signed-in user has generated, most recent first. */
-export const listMyQuickQuestionSets = query({
+// --- public queries ----------------------------------------------------
+// Queries return [] / null instead of throwing when signed out, so a page
+// that renders a moment before Clerk finishes loading doesn't crash.
+
+export const list = query({
   args: {},
   handler: async (ctx) => {
-    const me = await getCurrentUser(ctx);
-    if (!me) return [];
+    const userId = await getUserIdOrNull(ctx);
+    if (!userId) return [];
     return await ctx.db
       .query("quickQuestionSets")
-      .withIndex("by_creator", (q) => q.eq("createdBy", me._id))
+      .withIndex("by_creator", (q) => q.eq("createdBy", userId))
       .order("desc")
       .collect();
   },
 });
 
-export const getQuickQuestionSet = query({
+export const get = query({
   args: { id: v.id("quickQuestionSets") },
-  handler: async (ctx, { id }) => {
-    return await ctx.db.get(id);
+  handler: async (ctx, args) => {
+    const userId = await getUserIdOrNull(ctx);
+    if (!userId) return null;
+    const doc = await ctx.db.get(args.id);
+    if (!doc || doc.createdBy !== userId) return null;
+    return doc;
   },
 });
 
-/** Delete — only the owner can delete their own set. */
-export const deleteQuickQuestionSet = mutation({
-  args: { id: v.id("quickQuestionSets") },
-  handler: async (ctx, { id }) => {
-    const me = await getCurrentUser(ctx);
-    if (!me) throw new Error("You must be signed in to delete a set.");
-    const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Set not found.");
-    if (existing.createdBy !== me._id) {
-      throw new Error("You can only delete your own sets.");
+// --- public mutations ----------------------------------------------------
+
+// Teacher edits the AI-drafted "What you'll learn today" paragraph.
+export const updateLearningObjective = mutation({
+  args: { id: v.id("quickQuestionSets"), learningObjective: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const doc = await ctx.db.get(args.id);
+    if (!doc || doc.createdBy !== userId) throw new Error("Not found");
+    const text = args.learningObjective.trim();
+    if (text.length > MAX_OBJECTIVE_LENGTH) {
+      throw new Error(`Keep it under ${MAX_OBJECTIVE_LENGTH} characters.`);
     }
-    await ctx.db.delete(id);
+    await ctx.db.patch(args.id, { learningObjective: text });
   },
 });
 
-/** Rename — rounds out CRUD alongside create/read/delete. */
-export const renameQuickQuestionSet = mutation({
-  args: { id: v.id("quickQuestionSets"), topic: v.string() },
-  handler: async (ctx, { id, topic }) => {
-    const me = await getCurrentUser(ctx);
-    if (!me) throw new Error("You must be signed in to rename a set.");
-    const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Set not found.");
-    if (existing.createdBy !== me._id) {
-      throw new Error("You can only rename your own sets.");
-    }
-    if (!topic.trim()) throw new Error("Topic can't be empty.");
-    await ctx.db.patch(id, { topic: topic.trim() });
-  },
-});
-
-/**
- * Tag a set as "frequent" (star) or "deep" (serious topic), or pass null to
- * clear the tag and put it back to general discussion.
- */
-export const setQuickQuestionCategory = mutation({
+// Star / brain tags on the list page (same behaviour as before, new name).
+// Pass null to clear the tag back to "general discussion".
+export const setCategory = mutation({
   args: {
     id: v.id("quickQuestionSets"),
     category: v.union(v.literal("frequent"), v.literal("deep"), v.null()),
   },
-  handler: async (ctx, { id, category }) => {
-    const me = await getCurrentUser(ctx);
-    if (!me) throw new Error("You must be signed in to tag a set.");
-    const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Set not found.");
-    if (existing.createdBy !== me._id) {
-      throw new Error("You can only tag your own sets.");
-    }
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const doc = await ctx.db.get(args.id);
+    if (!doc || doc.createdBy !== userId) throw new Error("Not found");
     // Patching a field to undefined removes it in Convex.
-    await ctx.db.patch(id, { category: category ?? undefined });
+    await ctx.db.patch(args.id, { category: args.category ?? undefined });
+  },
+});
+
+// --- internal (called only from quickQuestions*.ts actions) --------------
+
+export const getUserIdByClerkId = internalQuery({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+    if (!user) throw new Error("No matching user record for this account");
+    return user._id;
+  },
+});
+
+export const saveGenerated = internalMutation({
+  args: {
+    topic: v.string(),
+    questions: v.array(v.string()),
+    learningObjective: v.string(),
+    category: v.optional(v.union(v.literal("frequent"), v.literal("deep"))),
+    createdBy: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("quickQuestionSets", {
+      topic: args.topic,
+      questions: args.questions,
+      learningObjective: args.learningObjective,
+      category: args.category,
+      createdBy: args.createdBy,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const setHeaderImage = internalMutation({
+  args: {
+    id: v.id("quickQuestionSets"),
+    url: v.string(),
+    publicId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      headerImage: { url: args.url, publicId: args.publicId },
+    });
+  },
+});
+
+export const clearHeaderImage = internalMutation({
+  args: { id: v.id("quickQuestionSets") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { headerImage: undefined });
+  },
+});
+
+export const deleteRow = internalMutation({
+  args: { id: v.id("quickQuestionSets") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
   },
 });

@@ -7,7 +7,7 @@ import { Brain, ListChecks, Sparkles, Star } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useQuickQuestionsGenerator } from "@/hooks/useQuickQuestionsGenerator";
-import { useDeleteSet } from "@/hooks/useDeleteSet";
+import { useDeleteSetAction } from "@/hooks/useDeleteSet";
 import { LessonGeneratingModal } from "@/app/components/Lessonsgeneratingmodal";
 import { HudPanel } from "@/app/components/HudPanel";
 import { DeleteButton } from "@/app/components/DeleteButton";
@@ -22,23 +22,22 @@ export default function QuickQuestionsPage() {
   const [search, setSearch] = useState("");
   const { generateQuickQuestionSet, isGenerating, error } =
     useQuickQuestionsGenerator();
-  const pastSets = useQuery(api.quickQuestionsData.listMyQuickQuestionSets);
-  const { deleteItem, deletingId } = useDeleteSet(
-    api.quickQuestionsData.deleteQuickQuestionSet,
+  const pastSets = useQuery(api.quickQuestionsData.list);
+  // An action, not a mutation: it removes the Cloudinary header image
+  // first, then the row.
+  const { deleteItem, deletingId } = useDeleteSetAction(
+    api.quickQuestionsActions.deleteSet,
     "question set",
   );
 
   // Optimistic update so the star / badge lights up instantly on click.
   const setCategory = useMutation(
-    api.quickQuestionsData.setQuickQuestionCategory,
+    api.quickQuestionsData.setCategory,
   ).withOptimisticUpdate((localStore, args) => {
-    const current = localStore.getQuery(
-      api.quickQuestionsData.listMyQuickQuestionSets,
-      {},
-    );
+    const current = localStore.getQuery(api.quickQuestionsData.list, {});
     if (current === undefined) return;
     localStore.setQuery(
-      api.quickQuestionsData.listMyQuickQuestionSets,
+      api.quickQuestionsData.list,
       {},
       current.map((s) =>
         s._id === args.id ? { ...s, category: args.category ?? undefined } : s,

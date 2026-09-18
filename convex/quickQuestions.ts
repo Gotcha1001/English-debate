@@ -34,8 +34,13 @@ export const generateQuickQuestionSet = action({
     const { data, usedFallback } = await generateJson(prompt);
     const set = assertGeneratedQuickQuestionsSet(data);
     const id: Id<"quickQuestionSets"> = await ctx.runMutation(
-      internal.quickQuestionsData.saveQuickQuestionSet,
-      { topic: set.topic, questions: set.questions, createdBy: me._id },
+      internal.quickQuestionsData.saveGenerated,
+      {
+        topic: set.topic,
+        questions: set.questions,
+        learningObjective: set.learningObjective,
+        createdBy: me._id,
+      },
     );
     return { id, usedFallback };
   },
