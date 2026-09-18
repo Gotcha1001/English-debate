@@ -66,6 +66,7 @@ export default defineSchema({
     questions: v.array(v.string()), // exactly 40
     createdBy: v.id("users"),
     createdAt: v.number(),
+    category: v.optional(v.union(v.literal("frequent"), v.literal("deep"))),
   }).index("by_creator", ["createdBy"]),
 
   // NEW: "Life Situations" — scenario + multiple options, e.g. "If you

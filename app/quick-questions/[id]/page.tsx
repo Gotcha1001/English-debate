@@ -160,6 +160,7 @@ export default function QuickQuestionsSetPage() {
   const { theme } = useColorTheme();
   const { hex400, shades } = theme;
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   if (set === undefined) {
     return (
@@ -202,21 +203,32 @@ export default function QuickQuestionsSetPage() {
 
         <ol className="space-y-2">
           {set.questions.map((question, i) => {
-            const isHovered = hoveredIndex === i;
+            const isSelected = selectedIndex === i;
+            // Lit when hovered OR when it's the question we're currently on
+            const isLit = hoveredIndex === i || isSelected;
             return (
               <li
                 key={i}
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}
+                onClick={() => setSelectedIndex(isSelected ? null : i)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedIndex(isSelected ? null : i);
+                  }
+                }}
+                tabIndex={0}
+                aria-current={isSelected ? "true" : undefined}
                 className="
-                  flex gap-3 rounded-lg border border-slate-200 bg-white/80 p-3
-                  backdrop-blur-sm transition-all duration-200
-                  dark:bg-[#0a1219]/75
-                "
+          flex cursor-pointer gap-3 rounded-lg border border-slate-200 bg-white/80 p-3
+          backdrop-blur-sm transition-all duration-200 outline-none
+          dark:bg-[#0a1219]/75
+        "
                 style={{
-                  borderColor: alpha(hex400, isHovered ? 0.4 : 0.1),
-                  backgroundColor: isHovered ? alpha(hex400, 0.06) : undefined,
-                  boxShadow: isHovered
+                  borderColor: alpha(hex400, isLit ? 0.4 : 0.1),
+                  backgroundColor: isLit ? alpha(hex400, 0.06) : undefined,
+                  boxShadow: isLit
                     ? `0 0 28px -6px ${alpha(hex400, 0.5)}`
                     : undefined,
                 }}
@@ -224,8 +236,8 @@ export default function QuickQuestionsSetPage() {
                 <span
                   className="shrink-0 font-mono text-xs tabular-nums transition-colors"
                   style={{
-                    color: isHovered ? shades[300] : hex400,
-                    filter: isHovered
+                    color: isLit ? shades[300] : hex400,
+                    filter: isLit
                       ? `drop-shadow(0 0 6px ${alpha(hex400, 0.8)})`
                       : undefined,
                   }}
