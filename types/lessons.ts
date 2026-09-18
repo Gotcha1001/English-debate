@@ -157,6 +157,7 @@ export function assertGeneratedDebateSet(value: unknown): GeneratedDebateSet {
 
 export interface GeneratedQuickQuestionsSet {
   topic: string;
+  learningObjective: string; // AI draft of "What you'll learn today"; may be ""
   questions: string[]; // exactly 40
 }
 
@@ -173,7 +174,14 @@ export function assertGeneratedQuickQuestionsSet(
   if (!isStringArray(v.questions)) {
     throw new Error("Quick questions JSON has invalid 'questions'");
   }
-  return { topic: v.topic, questions: v.questions };
+
+  // The draft is a nice-to-have. If the model skips it, save "" and let the
+  // teacher write one, instead of failing all 40 questions.
+  const learningObjective = isString(v.learningObjective)
+    ? v.learningObjective.trim()
+    : "";
+
+  return { topic: v.topic, learningObjective, questions: v.questions };
 }
 
 // ---- Life Situations ---------------------------------------------------

@@ -77,6 +77,7 @@ ${DEBATE_JSON_SHAPE}`;
 
 const QUICK_QUESTIONS_JSON_SHAPE = `{
   "topic": string,
+  "learningObjective": string,   // 1-2 sentences, see requirements
   "questions": [string]   // exactly 40
 }`;
 
@@ -94,6 +95,7 @@ Requirements:
 - Each question should be answerable in a sentence or two and easy to ask a partner.
 - Vary the phrasing and angle across all 40 --- avoid repeating the same sentence structure back to back.
 - Keep each question under 15 words. ${difficultyInstruction}
+- Also write "learningObjective": one or two friendly sentences (max 35 words) addressed to the learner, starting with "Today you'll", saying what they will practise on this topic (for example giving opinions, describing habits, using the past tense). Plain text only, no lists or markdown.
 
 Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
 ${QUICK_QUESTIONS_JSON_SHAPE}`;
