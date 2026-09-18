@@ -22,6 +22,7 @@ export const saveQuickQuestionSet = internalMutation({
     createdBy: v.id("users"),
   },
   handler: async (ctx, args) => {
+    // No category on creation = "general discussion" (nothing lit up).
     return await ctx.db.insert("quickQuestionSets", {
       ...args,
       createdAt: Date.now(),
@@ -50,7 +51,7 @@ export const getQuickQuestionSet = query({
   },
 });
 
-/** Delete --- only the owner can delete their own set. */
+/** Delete — only the owner can delete their own set. */
 export const deleteQuickQuestionSet = mutation({
   args: { id: v.id("quickQuestionSets") },
   handler: async (ctx, { id }) => {
@@ -65,7 +66,7 @@ export const deleteQuickQuestionSet = mutation({
   },
 });
 
-/** Rename --- rounds out CRUD alongside create/read/delete. */
+/** Rename — rounds out CRUD alongside create/read/delete. */
 export const renameQuickQuestionSet = mutation({
   args: { id: v.id("quickQuestionSets"), topic: v.string() },
   handler: async (ctx, { id, topic }) => {
@@ -78,5 +79,27 @@ export const renameQuickQuestionSet = mutation({
     }
     if (!topic.trim()) throw new Error("Topic can't be empty.");
     await ctx.db.patch(id, { topic: topic.trim() });
+  },
+});
+
+/**
+ * Tag a set as "frequent" (star) or "deep" (serious topic), or pass null to
+ * clear the tag and put it back to general discussion.
+ */
+export const setQuickQuestionCategory = mutation({
+  args: {
+    id: v.id("quickQuestionSets"),
+    category: v.union(v.literal("frequent"), v.literal("deep"), v.null()),
+  },
+  handler: async (ctx, { id, category }) => {
+    const me = await getCurrentUser(ctx);
+    if (!me) throw new Error("You must be signed in to tag a set.");
+    const existing = await ctx.db.get(id);
+    if (!existing) throw new Error("Set not found.");
+    if (existing.createdBy !== me._id) {
+      throw new Error("You can only tag your own sets.");
+    }
+    // Patching a field to undefined removes it in Convex.
+    await ctx.db.patch(id, { category: category ?? undefined });
   },
 });
