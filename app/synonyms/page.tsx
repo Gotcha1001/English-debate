@@ -5,7 +5,7 @@ import Link from "next/link";
 import { BookOpen, Layers, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { useSynonymsGenerator } from "@/hooks/useSynonymsGenerator";
-import { useDeleteSet } from "@/hooks/useDeleteSet";
+import { useDeleteSet, useDeleteSetAction } from "@/hooks/useDeleteSet";
 import { LessonGeneratingModal } from "@/app/components/Lessonsgeneratingmodal";
 import { HudPanel } from "@/app/components/HudPanel";
 import { DeleteButton } from "@/app/components/DeleteButton";
@@ -20,8 +20,8 @@ export default function SynonymsPage() {
   const [guideOpen, setGuideOpen] = useState(false);
   const { generateSynonymSet, isGenerating, error } = useSynonymsGenerator();
   const pastSets = useQuery(api.synonymsData.listMySynonymSets);
-  const { deleteItem, deletingId } = useDeleteSet(
-    api.synonymsData.deleteSynonymSet,
+  const { deleteItem, deletingId } = useDeleteSetAction(
+    api.synonymsActions.deleteSynonymSet,
     "synonym set",
   );
   const { theme } = useColorTheme();

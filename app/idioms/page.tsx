@@ -5,7 +5,7 @@ import Link from "next/link";
 import { GraduationCap, Quote, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { useIdiomsGenerator } from "@/hooks/useIdiomsGenerator";
-import { useDeleteSet } from "@/hooks/useDeleteSet";
+import { useDeleteSet, useDeleteSetAction } from "@/hooks/useDeleteSet";
 import { LessonGeneratingModal } from "@/app/components/Lessonsgeneratingmodal";
 import { HudPanel } from "@/app/components/HudPanel";
 import { DeleteButton } from "@/app/components/DeleteButton";
@@ -20,8 +20,8 @@ export default function IdiomsPage() {
   const [guideOpen, setGuideOpen] = useState(false);
   const { generateIdiomSet, isGenerating, error } = useIdiomsGenerator();
   const pastSets = useQuery(api.idiomsData.listMyIdiomSets);
-  const { deleteItem, deletingId } = useDeleteSet(
-    api.idiomsData.deleteIdiomSet,
+  const { deleteItem, deletingId } = useDeleteSetAction(
+    api.idiomsActions.deleteIdiomSet,
     "idiom lesson",
   );
   const { theme } = useColorTheme();

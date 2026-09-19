@@ -1,13 +1,12 @@
 // convex/wordRelationsData.ts
 //
-// NOTE: your schema already spreads `...headerFields` into wordRelationSets
-// (headerImage + learningObjective), so no schema change is needed.
+// Full file. Your schema already spreads `...headerFields` into
+// wordRelationSets (headerImage + learningObjective), so no schema change is
+// needed.
 //
-// TWO changes below:
-//   1. REPLACE the existing `getWordRelationSet` with the owner-scoped
-//      version (it currently returns any set to anyone).
-//   2. ADD `updateLearningObjective` + the three internal mutations.
-
+// Deleting a set is NOT done here: a mutation can't reach Cloudinary. Use
+// `api.wordRelationsActions.deleteWordRelationSet` (an action), which removes
+// the image and then calls `deleteRow` below.
 import { v } from "convex/values";
 import {
   internalMutation,
@@ -27,20 +26,53 @@ async function getCurrentUser(ctx: QueryCtx) {
 
 const MAX_OBJECTIVE_LENGTH = 600;
 
-// --- 1. REPLACE the existing getWordRelationSet with this ------------------
-//
-// Old version (remove it):
-//   export const getWordRelationSet = query({
-//     args: { id: v.id("wordRelationSets") },
-//     handler: async (ctx, { id }) => {
-//       return await ctx.db.get(id);
-//     },
-//   });
-//
-// New version: owner-only, same as getGrammarSet / getTenseSet elsewhere.
-// The set page shows edit controls for the header image, and
-// wordRelationsActions.ts uses this query as its ownership check, so it
-// must not hand out other people's sets.
+const groupValidator = v.object({
+  word: v.string(),
+  synonymOptions: v.array(v.string()), // exactly 4
+  correctSynonymIndex: v.number(),
+  antonymOptions: v.array(v.string()), // exactly 4
+  correctAntonymIndex: v.number(),
+  debateQuestion: v.string(),
+});
+
+// --- create / read -------------------------------------------------------
+
+/** Called only from wordRelations.ts (generateWordRelationSet). */
+export const saveWordRelationSet = internalMutation({
+  args: {
+    topic: v.string(),
+    groups: v.array(groupValidator),
+    discussionQuestions: v.array(v.string()),
+    createdBy: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("wordRelationSets", {
+      ...args,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+/** Word relation sets the signed-in user has generated, most recent first. */
+export const listMyWordRelationSets = query({
+  args: {},
+  handler: async (ctx) => {
+    const me = await getCurrentUser(ctx);
+    if (!me) return [];
+    return await ctx.db
+      .query("wordRelationSets")
+      .withIndex("by_creator", (q) => q.eq("createdBy", me._id))
+      .order("desc")
+      .collect();
+  },
+});
+
+/**
+ * Owner-only: returns null for anyone else's set or when signed out. The set
+ * page shows edit controls for the header image, and wordRelationsActions.ts
+ * uses this query as its ownership check, so it must not hand out other
+ * people's sets.
+ */
 export const getWordRelationSet = query({
   args: { id: v.id("wordRelationSets") },
   handler: async (ctx, { id }) => {
@@ -52,7 +84,7 @@ export const getWordRelationSet = query({
   },
 });
 
-// --- 2. ADD these, alongside your existing exports --------------------------
+// --- header editing ------------------------------------------------------
 
 // Teacher edits the "What you'll learn today" paragraph on the set page.
 export const updateLearningObjective = mutation({
@@ -70,7 +102,7 @@ export const updateLearningObjective = mutation({
   },
 });
 
-// --- internal (called only from wordRelationsActions.ts) ------------------
+// --- internal (called only from wordRelationsActions.ts) -----------------
 
 export const setHeaderImage = internalMutation({
   args: {
@@ -98,12 +130,3 @@ export const deleteRow = internalMutation({
     await ctx.db.delete(args.id);
   },
 });
-
-// NOTE: your existing `deleteWordRelationSet` mutation (plain, owner-checked)
-// can stay if the set has no header image, but once it does, a mutation
-// can't reach Cloudinary. Swap the list/detail page's delete button over to
-// `api.wordRelationsActions.deleteWordRelationSet` (see that file) so the
-// Cloudinary asset gets cleaned up too, and remove this plain mutation to
-// avoid two ways to delete a set:
-//
-//   export const deleteWordRelationSet = mutation({ ... });   // <- remove

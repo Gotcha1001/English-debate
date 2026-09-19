@@ -7,7 +7,7 @@ import { Clock, GraduationCap, Repeat, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { useTensesGenerator } from "@/hooks/useTensesGenerator";
 import { useTenseConversionGenerator } from "@/hooks/useTenseConversionGenerator";
-import { useDeleteSet } from "@/hooks/useDeleteSet";
+import { useDeleteSetAction } from "@/hooks/useDeleteSet";
 import { LessonGeneratingModal } from "@/app/components/Lessonsgeneratingmodal";
 import { HudPanel } from "@/app/components/HudPanel";
 import { DeleteButton } from "@/app/components/DeleteButton";
@@ -36,7 +36,7 @@ export default function TensesPage() {
   } = useTensesGenerator();
   const namePastSets = useQuery(api.tensesData.listMyTenseSets);
   const { deleteItem: deleteNameSet, deletingId: deletingNameId } =
-    useDeleteSet(api.tensesData.deleteTenseSet, "tenses set");
+    useDeleteSetAction(api.tensesActions.deleteTenseSet, "tenses set");
   const filteredNameSets = namePastSets?.filter((set) =>
     set.topic.toLowerCase().includes(nameSearch.toLowerCase()),
   );
@@ -58,8 +58,8 @@ export default function TensesPage() {
     api.tenseConversionData.listMyTenseConversionSets,
   );
   const { deleteItem: deleteTransformSet, deletingId: deletingTransformId } =
-    useDeleteSet(
-      api.tenseConversionData.deleteTenseConversionSet,
+    useDeleteSetAction(
+      api.tenseConversionActions.deleteTenseConversionSet,
       "tense conversion set",
     );
   const filteredTransformSets = transformPastSets?.filter((set) =>
