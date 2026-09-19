@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Shuffle, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { useLifeSituationsGenerator } from "@/hooks/useLifeSituationsGenerator";
-import { useDeleteSet } from "@/hooks/useDeleteSet";
+import { useDeleteSet, useDeleteSetAction } from "@/hooks/useDeleteSet";
 import { LessonGeneratingModal } from "@/app/components/Lessonsgeneratingmodal";
 import { HudPanel } from "@/app/components/HudPanel";
 import { DeleteButton } from "@/app/components/DeleteButton";
@@ -20,8 +20,11 @@ export default function LifeSituationsPage() {
   const { generateLifeSituationSet, isGenerating, error } =
     useLifeSituationsGenerator();
   const pastSets = useQuery(api.lifeSituationsData.listMyLifeSituationSets);
-  const { deleteItem, deletingId } = useDeleteSet(
-    api.lifeSituationsData.deleteLifeSituationSet,
+  // import: was  { useDeleteSet }
+
+  // hook call:
+  const { deleteItem, deletingId } = useDeleteSetAction(
+    api.lifeSituationsActions.deleteLifeSituationSet,
     "scenario set",
   );
   const { theme } = useColorTheme();

@@ -1,3 +1,13 @@
+// convex/wordRelationsData.ts
+//
+// NOTE: your schema already spreads `...headerFields` into wordRelationSets
+// (headerImage + learningObjective), so no schema change is needed.
+//
+// TWO changes below:
+//   1. REPLACE the existing `getWordRelationSet` with the owner-scoped
+//      version (it currently returns any set to anyone).
+//   2. ADD `updateLearningObjective` + the three internal mutations.
+
 import { v } from "convex/values";
 import {
   internalMutation,
@@ -15,78 +25,85 @@ async function getCurrentUser(ctx: QueryCtx) {
     .first();
 }
 
-const groupValidator = v.object({
-  word: v.string(),
-  synonymOptions: v.array(v.string()),
-  correctSynonymIndex: v.number(),
-  antonymOptions: v.array(v.string()),
-  correctAntonymIndex: v.number(),
-  debateQuestion: v.string(),
+const MAX_OBJECTIVE_LENGTH = 600;
+
+// --- 1. REPLACE the existing getWordRelationSet with this ------------------
+//
+// Old version (remove it):
+//   export const getWordRelationSet = query({
+//     args: { id: v.id("wordRelationSets") },
+//     handler: async (ctx, { id }) => {
+//       return await ctx.db.get(id);
+//     },
+//   });
+//
+// New version: owner-only, same as getGrammarSet / getTenseSet elsewhere.
+// The set page shows edit controls for the header image, and
+// wordRelationsActions.ts uses this query as its ownership check, so it
+// must not hand out other people's sets.
+export const getWordRelationSet = query({
+  args: { id: v.id("wordRelationSets") },
+  handler: async (ctx, { id }) => {
+    const me = await getCurrentUser(ctx);
+    if (!me) return null;
+    const doc = await ctx.db.get(id);
+    if (!doc || doc.createdBy !== me._id) return null;
+    return doc;
+  },
 });
 
-export const saveWordRelationSet = internalMutation({
+// --- 2. ADD these, alongside your existing exports --------------------------
+
+// Teacher edits the "What you'll learn today" paragraph on the set page.
+export const updateLearningObjective = mutation({
+  args: { id: v.id("wordRelationSets"), learningObjective: v.string() },
+  handler: async (ctx, args) => {
+    const me = await getCurrentUser(ctx);
+    if (!me) throw new Error("Not authenticated");
+    const doc = await ctx.db.get(args.id);
+    if (!doc || doc.createdBy !== me._id) throw new Error("Not found");
+    const text = args.learningObjective.trim();
+    if (text.length > MAX_OBJECTIVE_LENGTH) {
+      throw new Error(`Keep it under ${MAX_OBJECTIVE_LENGTH} characters.`);
+    }
+    await ctx.db.patch(args.id, { learningObjective: text });
+  },
+});
+
+// --- internal (called only from wordRelationsActions.ts) ------------------
+
+export const setHeaderImage = internalMutation({
   args: {
-    topic: v.string(),
-    groups: v.array(groupValidator),
-    discussionQuestions: v.array(v.string()),
-    createdBy: v.id("users"),
+    id: v.id("wordRelationSets"),
+    url: v.string(),
+    publicId: v.string(),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("wordRelationSets", {
-      ...args,
-      createdAt: Date.now(),
+    await ctx.db.patch(args.id, {
+      headerImage: { url: args.url, publicId: args.publicId },
     });
   },
 });
 
-/** Word relation sets the signed-in user has generated, most recent first. */
-export const listMyWordRelationSets = query({
-  args: {},
-  handler: async (ctx) => {
-    const me = await getCurrentUser(ctx);
-    if (!me) return [];
-    return await ctx.db
-      .query("wordRelationSets")
-      .withIndex("by_creator", (q) => q.eq("createdBy", me._id))
-      .order("desc")
-      .collect();
-  },
-});
-
-export const getWordRelationSet = query({
+export const clearHeaderImage = internalMutation({
   args: { id: v.id("wordRelationSets") },
-  handler: async (ctx, { id }) => {
-    return await ctx.db.get(id);
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { headerImage: undefined });
   },
 });
 
-/** Delete -- only the owner can delete their own set. */
-export const deleteWordRelationSet = mutation({
+export const deleteRow = internalMutation({
   args: { id: v.id("wordRelationSets") },
-  handler: async (ctx, { id }) => {
-    const me = await getCurrentUser(ctx);
-    if (!me) throw new Error("You must be signed in to delete a set.");
-    const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Set not found.");
-    if (existing.createdBy !== me._id) {
-      throw new Error("You can only delete your own sets.");
-    }
-    await ctx.db.delete(id);
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
   },
 });
 
-/** Rename -- rounds out CRUD alongside create/read/delete. */
-export const renameWordRelationSet = mutation({
-  args: { id: v.id("wordRelationSets"), topic: v.string() },
-  handler: async (ctx, { id, topic }) => {
-    const me = await getCurrentUser(ctx);
-    if (!me) throw new Error("You must be signed in to rename a set.");
-    const existing = await ctx.db.get(id);
-    if (!existing) throw new Error("Set not found.");
-    if (existing.createdBy !== me._id) {
-      throw new Error("You can only rename your own sets.");
-    }
-    if (!topic.trim()) throw new Error("Topic can't be empty.");
-    await ctx.db.patch(id, { topic: topic.trim() });
-  },
-});
+// NOTE: your existing `deleteWordRelationSet` mutation (plain, owner-checked)
+// can stay if the set has no header image, but once it does, a mutation
+// can't reach Cloudinary. Swap the list/detail page's delete button over to
+// `api.wordRelationsActions.deleteWordRelationSet` (see that file) so the
+// Cloudinary asset gets cleaned up too, and remove this plain mutation to
+// avoid two ways to delete a set:
+//
+//   export const deleteWordRelationSet = mutation({ ... });   // <- remove

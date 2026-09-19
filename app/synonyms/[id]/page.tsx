@@ -1,4 +1,5 @@
 "use client";
+
 import { useParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -7,12 +8,15 @@ import { SynonymSpectrumCard } from "@/app/components/SynonymSpectrumCard";
 import { HudPanel, HudLabel } from "@/app/components/HudPanel";
 import { useColorTheme } from "@/app/context/ColorThemeContext";
 import { MatrixBackground } from "@/app/components/MatrixBackground";
+import { LessonHeader } from "@/app/components/LessonHeader";
+import { useSynonymHeader } from "@/hooks/useSynonymHeader";
 
 export default function SynonymSetPage() {
   const params = useParams<{ id: string }>();
-  const set = useQuery(api.synonymsData.getSynonymSet, {
-    id: params.id as Id<"synonymSets">,
-  });
+  const setId = params.id as Id<"synonymSets">;
+  const set = useQuery(api.synonymsData.getSynonymSet, { id: setId });
+  // Must sit above the early returns below (rules of hooks).
+  const header = useSynonymHeader(setId);
   const { theme } = useColorTheme();
   const { hex400, shades } = theme;
 
@@ -40,28 +44,52 @@ export default function SynonymSetPage() {
       </div>
     );
   }
+
   return (
     <div className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
       <MatrixBackground />
+
       <div className="relative z-10 mx-auto max-w-3xl space-y-5 pb-16">
-        <header className="mb-2">
+        {/* A <div>, not <header>: <LessonHeader> renders its own <header>
+            and headers can't nest. */}
+        <div className="mb-2">
           <p className="text-sm font-medium" style={{ color: hex400 }}>
             Synonym Spectrum
           </p>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-stone-50">
-            {set.topic}
-          </h1>
+          {/* Themed glow around the header card. `getSynonymSet` only
+              returns sets the signed-in user owns, so anyone who can see
+              this page can edit it. */}
+          <div
+            className="mt-3 rounded-2xl"
+            style={{
+              boxShadow: `0 0 0 1px ${hex400}59, 0 0 40px -10px ${hex400}73`,
+            }}
+          >
+            <LessonHeader
+              title={set.topic}
+              learningObjective={set.learningObjective}
+              imageUrl={set.headerImage?.url}
+              editable
+              isUploadingImage={header.isImageBusy}
+              isSavingObjective={header.isSavingObjective}
+              onUploadImage={header.uploadImage}
+              onRemoveImage={header.removeImage}
+              onSaveObjective={header.saveObjective}
+            />
+          </div>
           <p
-            className="mt-1 text-sm text-slate-500"
+            className="mt-3 text-sm text-slate-500"
             style={{ color: `${shades[300]}66` }}
           >
             {set.groups.length} spectrums &middot;{" "}
             {set.discussionQuestions.length} discussion questions
           </p>
-        </header>
+        </div>
+
         {set.groups.map((group, i) => (
           <SynonymSpectrumCard key={i} index={i} data={group} />
         ))}
+
         <HudPanel className="p-5">
           <HudLabel>
             Discussion questions ({set.discussionQuestions.length})
