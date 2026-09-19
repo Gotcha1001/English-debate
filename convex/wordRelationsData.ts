@@ -107,3 +107,41 @@ export const deleteRow = internalMutation({
 // avoid two ways to delete a set:
 //
 //   export const deleteWordRelationSet = mutation({ ... });   // <- remove
+const groupValidator = v.object({
+  word: v.string(),
+  synonymOptions: v.array(v.string()),
+  correctSynonymIndex: v.number(),
+  antonymOptions: v.array(v.string()),
+  correctAntonymIndex: v.number(),
+  debateQuestion: v.string(),
+});
+
+/** Called only from wordRelations.ts (generateWordRelationSet). */
+export const saveWordRelationSet = internalMutation({
+  args: {
+    topic: v.string(),
+    groups: v.array(groupValidator),
+    discussionQuestions: v.array(v.string()),
+    createdBy: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("wordRelationSets", {
+      ...args,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+/** Word relation sets the signed-in user has generated, most recent first. */
+export const listMyWordRelationSets = query({
+  args: {},
+  handler: async (ctx) => {
+    const me = await getCurrentUser(ctx);
+    if (!me) return [];
+    return await ctx.db
+      .query("wordRelationSets")
+      .withIndex("by_creator", (q) => q.eq("createdBy", me._id))
+      .order("desc")
+      .collect();
+  },
+});
