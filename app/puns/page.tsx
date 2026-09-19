@@ -6,7 +6,7 @@ import Link from "next/link";
 import { GraduationCap, Laugh, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { usePunsGenerator } from "@/hooks/usePunsGenerator";
-import { useDeleteSet } from "@/hooks/useDeleteSet";
+import { useDeleteSetAction } from "@/hooks/useDeleteSet";
 import { LessonGeneratingModal } from "@/app/components/Lessonsgeneratingmodal";
 import { HudPanel } from "@/app/components/HudPanel";
 import { DeleteButton } from "@/app/components/DeleteButton";
@@ -21,8 +21,10 @@ export default function PunsPage() {
   const [guideOpen, setGuideOpen] = useState(false);
   const { generatePunSet, isGenerating, error } = usePunsGenerator();
   const pastSets = useQuery(api.punsData.listMyPunSets);
-  const { deleteItem, deletingId } = useDeleteSet(
-    api.punsData.deletePunSet,
+  // Deleting is an action (not a mutation) so it can remove the Cloudinary
+  // header image before deleting the row. See convex/punsActions.ts.
+  const { deleteItem, deletingId } = useDeleteSetAction(
+    api.punsActions.deletePunSet,
     "pun set",
   );
   const { theme } = useColorTheme();
