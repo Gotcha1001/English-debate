@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeftRight, Scale, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { useAntonymsGenerator } from "@/hooks/useAntonymsGenerator";
-import { useDeleteSet } from "@/hooks/useDeleteSet";
+import { useDeleteSet, useDeleteSetAction } from "@/hooks/useDeleteSet";
 import { LessonGeneratingModal } from "@/app/components/Lessonsgeneratingmodal";
 import { HudPanel } from "@/app/components/HudPanel";
 import { DeleteButton } from "@/app/components/DeleteButton";
@@ -19,8 +19,8 @@ export default function AntonymsPage() {
   const [guideOpen, setGuideOpen] = useState(false);
   const { generateAntonymSet, isGenerating, error } = useAntonymsGenerator();
   const pastSets = useQuery(api.antonymsData.listMyAntonymSets);
-  const { deleteItem, deletingId } = useDeleteSet(
-    api.antonymsData.deleteAntonymSet,
+  const { deleteItem, deletingId } = useDeleteSetAction(
+    api.antonymsActions.deleteAntonymSet,
     "antonym set",
   );
   const filteredSets = pastSets?.filter((set) =>

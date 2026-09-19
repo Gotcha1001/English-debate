@@ -7,7 +7,6 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { AntonymMatchGame } from "@/app/components/AntonymMatchGame";
 import { AntonymAnalogyCard } from "@/app/components/AntonymAnalogyCard";
 import { MatrixBackground } from "@/app/components/MatrixBackground";
-import { useColorTheme } from "@/app/context/ColorThemeContext";
 import { LessonHeader } from "@/app/components/LessonHeader";
 import { useAntonymHeader } from "@/hooks/useAntonymHeader";
 
@@ -15,12 +14,9 @@ export default function AntonymSetPage() {
   const params = useParams<{ id: string }>();
   const setId = params.id as Id<"antonymSets">;
   const set = useQuery(api.antonymsData.getAntonymSet, { id: setId });
-  // Must sit above the early returns below (rules of hooks).
+
+  // Must sit above the early returns (rules of hooks).
   const header = useAntonymHeader(setId);
-  // Only used for the header's glow; the rest of this page still uses its
-  // own fixed cyan classes.
-  const { theme } = useColorTheme();
-  const { hex400 } = theme;
 
   if (set === undefined) {
     return (
@@ -29,6 +25,7 @@ export default function AntonymSetPage() {
       </p>
     );
   }
+
   if (set === null) {
     return (
       <p className="text-sm text-slate-500 dark:text-cyan-200/50">
@@ -40,23 +37,13 @@ export default function AntonymSetPage() {
   return (
     <div className="relative min-h-[calc(100vh-5rem)] overflow-hidden">
       <MatrixBackground />
-
       <div className="relative z-10 mx-auto max-w-3xl space-y-5 pb-16">
-        {/* A <div>, not <header>: <LessonHeader> renders its own <header>
-            and headers can't nest. */}
+        {/* A <div>, not <header>: LessonHeader renders its own <header>. */}
         <div className="mb-2">
           <p className="text-sm font-medium text-cyan-700 dark:text-cyan-400">
             Antonym Match
           </p>
-          {/* Themed glow around the header card. `getAntonymSet` only
-              returns sets the signed-in user owns, so anyone who can see
-              this page can edit it. */}
-          <div
-            className="mt-3 rounded-2xl"
-            style={{
-              boxShadow: `0 0 0 1px ${hex400}59, 0 0 40px -10px ${hex400}73`,
-            }}
-          >
+          <div className="mt-3 rounded-2xl shadow-[0_0_0_1px_rgba(34,211,238,0.35),0_0_40px_-10px_rgba(34,211,238,0.45)]">
             <LessonHeader
               title={set.topic}
               learningObjective={set.learningObjective}
