@@ -5,7 +5,7 @@ import Link from "next/link";
 import { GitCompare, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { useWordRelationsGenerator } from "@/hooks/useWordRelationsGenerator";
-import { useDeleteSet } from "@/hooks/useDeleteSet";
+import { useDeleteSet, useDeleteSetAction } from "@/hooks/useDeleteSet";
 import { LessonGeneratingModal } from "@/app/components/Lessonsgeneratingmodal";
 import { HudPanel } from "@/app/components/HudPanel";
 import { DeleteButton } from "@/app/components/DeleteButton";
@@ -22,8 +22,8 @@ export default function WordRelationsPage() {
   const { generateWordRelationSet, isGenerating, error } =
     useWordRelationsGenerator();
   const pastSets = useQuery(api.wordRelationsData.listMyWordRelationSets);
-  const { deleteItem, deletingId } = useDeleteSet(
-    api.wordRelationsData.deleteWordRelationSet,
+  const { deleteItem, deletingId } = useDeleteSetAction(
+    api.wordRelationsActions.deleteWordRelationSet,
     "word relation set",
   );
   const filteredSets = pastSets?.filter((set) =>

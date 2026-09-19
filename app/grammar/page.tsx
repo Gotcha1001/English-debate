@@ -6,7 +6,7 @@ import Link from "next/link";
 import { GraduationCap, SpellCheck, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { useGrammarGenerator } from "@/hooks/useGrammarGenerator";
-import { useDeleteSet } from "@/hooks/useDeleteSet";
+import { useDeleteSet, useDeleteSetAction } from "@/hooks/useDeleteSet";
 import { LessonGeneratingModal } from "@/app/components/Lessonsgeneratingmodal";
 import { HudPanel } from "@/app/components/HudPanel";
 import { DeleteButton } from "@/app/components/DeleteButton";
@@ -21,8 +21,8 @@ export default function GrammarBreakdownPage() {
   const [guideOpen, setGuideOpen] = useState(false);
   const { generateGrammarSet, isGenerating, error } = useGrammarGenerator();
   const pastSets = useQuery(api.grammarData.listMyGrammarSets);
-  const { deleteItem, deletingId } = useDeleteSet(
-    api.grammarData.deleteGrammarSet,
+  const { deleteItem, deletingId } = useDeleteSetAction(
+    api.grammarActions.deleteGrammarSet,
     "grammar breakdown",
   );
   const { theme } = useColorTheme();
