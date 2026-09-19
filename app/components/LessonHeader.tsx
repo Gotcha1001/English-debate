@@ -1,7 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { ImagePlus, Pencil, Trash2, Loader2, Check, X } from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import {
+  AlignLeft,
+  ImagePlus,
+  Pencil,
+  Trash2,
+  Loader2,
+  Check,
+  X,
+} from "lucide-react";
 import { HudPanel } from "@/app/components/HudPanel";
 import { useColorTheme } from "@/app/context/ColorThemeContext";
 
@@ -30,6 +38,42 @@ export interface LessonHeaderProps {
   onSaveObjective: (text: string) => void | Promise<void>;
 }
 
+/** Small accent-colored button used for the optional "Add ..." actions. */
+function AccentButton({
+  onClick,
+  icon,
+  children,
+}: {
+  onClick: () => void;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  const { theme } = useColorTheme();
+  const { hex400, shades } = theme;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition"
+      style={{
+        borderColor: `${hex400}66`,
+        color: shades[300],
+        backgroundColor: `${hex400}14`,
+        boxShadow: `0 0 18px -8px ${hex400}99`,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = `${hex400}2e`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = `${hex400}14`;
+      }}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
 export function LessonHeader({
   title,
   learningObjective,
@@ -47,6 +91,12 @@ export function LessonHeader({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditingObjective, setIsEditingObjective] = useState(false);
   const [draftObjective, setDraftObjective] = useState(learningObjective ?? "");
+
+  // The "what you'll learn" block only exists when there is text (or the
+  // teacher is writing it). Otherwise the card is just the title.
+  const hasObjective = Boolean(learningObjective?.trim());
+  const showAddHeader = editable && !imageUrl && !isUploadingImage;
+  const showAddSummary = editable && !hasObjective && !isEditingObjective;
 
   function handlePickImage() {
     fileInputRef.current?.click();
@@ -75,7 +125,7 @@ export function LessonHeader({
 
   return (
     <HudPanel>
-      <header>
+      <header className="group/header">
         {/* Hidden picker lives at the top level so the "Add header" button can
             open it even when no banner is on screen yet. */}
         {editable && (
@@ -146,7 +196,7 @@ export function LessonHeader({
         )}
 
         <div className="p-6">
-          {/* Title + "Add header" */}
+          {/* Title + optional "Add ..." buttons */}
           <div className="flex items-start justify-between gap-4">
             <h1
               className="text-3xl font-bold tracking-tight text-stone-50"
@@ -154,122 +204,118 @@ export function LessonHeader({
             >
               {title}
             </h1>
-            {editable && !imageUrl && !isUploadingImage && (
-              <button
-                type="button"
-                onClick={handlePickImage}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition"
-                style={{
-                  borderColor: `${hex400}66`,
-                  color: shades[300],
-                  backgroundColor: `${hex400}14`,
-                  boxShadow: `0 0 18px -8px ${hex400}99`,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = `${hex400}2e`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = `${hex400}14`;
-                }}
-              >
-                <ImagePlus className="h-4 w-4" />
-                Add header
-              </button>
-            )}
-          </div>
-
-          {/* What you'll learn today */}
-          <div
-            className="mt-5 border-l-2 pl-4"
-            style={{ borderColor: `${hex400}99` }}
-          >
-            <p
-              className="mb-1.5 font-[family-name:var(--font-hud)] text-xs uppercase tracking-[0.2em]"
-              style={{ color: `${shades[300]}b3` }}
-            >
-              What you&apos;ll learn today
-            </p>
-
-            {isEditingObjective ? (
-              <div className="space-y-3">
-                <textarea
-                  value={draftObjective}
-                  onChange={(e) => setDraftObjective(e.target.value)}
-                  rows={3}
-                  autoFocus
-                  className="w-full resize-none rounded-lg border bg-[#0a1219] p-3 text-stone-50 outline-none transition-colors"
-                  style={{ borderColor: `${hex400}33` }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = hex400;
-                    e.currentTarget.style.boxShadow = `0 0 0 2px ${hex400}33`;
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = `${hex400}33`;
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={saveObjective}
-                    disabled={isSavingObjective}
-                    className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-[#04070a] transition disabled:opacity-60"
-                    style={{
-                      backgroundColor: shades[500],
-                      boxShadow: `0 0 20px -6px ${hex400}80`,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSavingObjective) {
-                        e.currentTarget.style.backgroundColor = hex400;
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = shades[500];
-                    }}
+            {(showAddHeader || showAddSummary) && (
+              <div className="flex shrink-0 flex-wrap justify-end gap-2 opacity-0 transition-opacity duration-200 group-hover/header:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
+                {showAddHeader && (
+                  <AccentButton
+                    onClick={handlePickImage}
+                    icon={<ImagePlus className="h-4 w-4" />}
                   >
-                    {isSavingObjective ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Check className="h-3.5 w-3.5" />
-                    )}
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingObjective(false)}
-                    className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm text-stone-300 transition hover:bg-white/5"
-                    style={{ borderColor: `${hex400}33` }}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="group/objective flex items-start justify-between gap-3">
-                <p className="leading-relaxed text-stone-200">
-                  {learningObjective || (
-                    <span className="italic text-stone-500">
-                      No summary yet for what today&apos;s practice covers.
-                    </span>
-                  )}
-                </p>
-                {editable && (
-                  <button
-                    type="button"
+                    Add header
+                  </AccentButton>
+                )}
+                {showAddSummary && (
+                  <AccentButton
                     onClick={startEditingObjective}
-                    // Hidden until the row is hovered. Still reachable by keyboard (focus) and
-                    // shown on touch screens, which have no hover.
-                    className="shrink-0 rounded-md p-1.5 opacity-0 transition hover:bg-white/5 hover:opacity-100 focus-visible:opacity-100 group-hover/objective:opacity-100 [@media(hover:none)]:opacity-70"
-                    style={{ color: shades[300] }}
-                    aria-label="Edit summary"
+                    icon={<AlignLeft className="h-4 w-4" />}
                   >
-                    <Pencil className="h-4 w-4" />
-                  </button>
+                    Add summary
+                  </AccentButton>
                 )}
               </div>
             )}
           </div>
+
+          {/* What you'll learn today */}
+          {(hasObjective || isEditingObjective) && (
+            <div
+              className="mt-5 border-l-2 pl-4"
+              style={{ borderColor: `${hex400}99` }}
+            >
+              <p
+                className="mb-1.5 font-[family-name:var(--font-hud)] text-xs uppercase tracking-[0.2em]"
+                style={{ color: `${shades[300]}b3` }}
+              >
+                What you&apos;ll learn today
+              </p>
+
+              {isEditingObjective ? (
+                <div className="space-y-3">
+                  <textarea
+                    value={draftObjective}
+                    onChange={(e) => setDraftObjective(e.target.value)}
+                    rows={3}
+                    autoFocus
+                    className="w-full resize-none rounded-lg border bg-[#0a1219] p-3 text-stone-50 outline-none transition-colors"
+                    style={{ borderColor: `${hex400}33` }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = hex400;
+                      e.currentTarget.style.boxShadow = `0 0 0 2px ${hex400}33`;
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = `${hex400}33`;
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={saveObjective}
+                      disabled={isSavingObjective}
+                      className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-[#04070a] transition disabled:opacity-60"
+                      style={{
+                        backgroundColor: shades[500],
+                        boxShadow: `0 0 20px -6px ${hex400}80`,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSavingObjective) {
+                          e.currentTarget.style.backgroundColor = hex400;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = shades[500];
+                      }}
+                    >
+                      {isSavingObjective ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Check className="h-3.5 w-3.5" />
+                      )}
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingObjective(false)}
+                      className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm text-stone-300 transition hover:bg-white/5"
+                      style={{ borderColor: `${hex400}33` }}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="group/objective flex items-start justify-between gap-3">
+                  <p className="leading-relaxed text-stone-200">
+                    {learningObjective}
+                  </p>
+                  {editable && (
+                    <button
+                      type="button"
+                      onClick={startEditingObjective}
+                      // Hidden until the row is hovered. Still reachable by keyboard (focus) and
+                      // shown on touch screens, which have no hover.
+                      className="shrink-0 rounded-md p-1.5 opacity-0 transition hover:bg-white/5 hover:opacity-100 focus-visible:opacity-100 group-hover/objective:opacity-100 [@media(hover:none)]:opacity-70"
+                      style={{ color: shades[300] }}
+                      aria-label="Edit summary"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </header>
     </HudPanel>

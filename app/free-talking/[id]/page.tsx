@@ -302,6 +302,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useColorTheme } from "@/app/context/ColorThemeContext";
+import { LessonHeader } from "@/app/components/LessonHeader";
+import { useLessonHeader } from "@/hooks/useLessonHeader";
 
 const READOUTS = [
   ["noun", "verb", "adj."],
@@ -549,9 +551,10 @@ function MultipleChoiceItem({
 
 export default function LessonPage() {
   const params = useParams<{ id: string }>();
-  const lesson = useQuery(api.lessonData.getLesson, {
-    id: params.id as Id<"lessons">,
-  });
+  const lessonId = params.id as Id<"lessons">;
+  const lesson = useQuery(api.lessonData.getLesson, { id: lessonId });
+  // Must sit above the early returns below (rules of hooks).
+  const header = useLessonHeader(lessonId);
   const { theme } = useColorTheme();
   const { hex400 } = theme;
 
@@ -575,14 +578,34 @@ export default function LessonPage() {
       <MatrixBackground />
 
       <div className="relative z-10 mx-auto max-w-3xl space-y-10 pb-16">
-        <header>
+        {/* A <div>, not <header>: <LessonHeader> renders its own <header>
+            and headers can't nest. */}
+        <div>
           <p className="text-sm font-medium" style={{ color: hex400 }}>
             Free Talking lesson
           </p>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-stone-50">
-            {lesson.topic}
-          </h1>
-        </header>
+          {/* Themed glow around the header card. `getLesson` only returns
+              lessons the signed-in user owns, so anyone who can see this
+              page can edit it. */}
+          <div
+            className="mt-3 rounded-2xl"
+            style={{
+              boxShadow: `0 0 0 1px ${hex400}59, 0 0 40px -10px ${hex400}73`,
+            }}
+          >
+            <LessonHeader
+              title={lesson.topic}
+              learningObjective={lesson.learningObjective}
+              imageUrl={lesson.headerImage?.url}
+              editable
+              isUploadingImage={header.isImageBusy}
+              isSavingObjective={header.isSavingObjective}
+              onUploadImage={header.uploadImage}
+              onRemoveImage={header.removeImage}
+              onSaveObjective={header.saveObjective}
+            />
+          </div>
+        </div>
 
         <section>
           <SectionLabel color="bg-cyan-600">Story</SectionLabel>

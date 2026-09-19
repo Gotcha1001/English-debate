@@ -1,69 +1,3 @@
-// "use client";
-
-// import { useParams } from "next/navigation";
-// import { useQuery } from "convex/react";
-// import { api } from "@/convex/_generated/api";
-// import type { Id } from "@/convex/_generated/dataModel";
-// import {
-//   GrammarSentenceCard,
-//   PartOfSpeechLegend,
-// } from "@/app/components/Grammarsentencecard";
-
-// export default function GrammarSetPage() {
-//   const params = useParams<{ id: string }>();
-//   const set = useQuery(api.grammarData.getGrammarSet, {
-//     id: params.id as Id<"grammarSets">,
-//   });
-
-//   if (set === undefined) {
-//     return (
-//       <p className="text-sm text-slate-500 dark:text-cyan-200/50">
-//         Loading breakdown...
-//       </p>
-//     );
-//   }
-
-//   if (set === null) {
-//     return (
-//       <p className="text-sm text-slate-500 dark:text-cyan-200/50">
-//         Grammar breakdown not found.
-//       </p>
-//     );
-//   }
-
-//   const totalQuestions = set.sentences.reduce(
-//     (sum, sentence) => sum + sentence.quiz.length,
-//     0,
-//   );
-
-//   return (
-//     <div className="mx-auto max-w-3xl space-y-5 pb-16">
-//       <header className="mb-2">
-//         <p className="text-sm font-medium text-cyan-700 dark:text-cyan-400">
-//           Grammar Breakdown
-//         </p>
-//         <h1 className="text-3xl font-bold text-slate-900 dark:text-cyan-50">
-//           {set.topic}
-//         </h1>
-//         <p className="mt-1 text-sm text-slate-500 dark:text-cyan-200/40">
-//           {set.sentences.length} sentences · {totalQuestions} quiz questions
-//         </p>
-//       </header>
-
-//       <PartOfSpeechLegend />
-
-//       {set.sentences.map((sentence, i) => (
-//         <GrammarSentenceCard
-//           key={i}
-//           index={i}
-//           sentence={sentence.sentence}
-//           tokens={sentence.tokens}
-//           quiz={sentence.quiz}
-//         />
-//       ))}
-//     </div>
-//   );
-// }
 "use client";
 
 import { useParams } from "next/navigation";
@@ -77,8 +11,11 @@ import {
 } from "@/app/components/Grammarsentencecard";
 import { useColorTheme } from "@/app/context/ColorThemeContext";
 import type { ColorTheme } from "@/lib/colorThemes";
+import { LessonHeader } from "@/app/components/LessonHeader";
+import { useGrammarHeader } from "@/hooks/useGrammarHeader";
 
 /* ---------- matrix rain + orbitals ---------- */
+
 const READOUTS = [
   ["noun", "verb", "adj."],
   ["adverb", "article", "conj."],
@@ -182,9 +119,10 @@ function MatrixBackground({ theme }: { theme: ColorTheme }) {
 
 export default function GrammarSetPage() {
   const params = useParams<{ id: string }>();
-  const set = useQuery(api.grammarData.getGrammarSet, {
-    id: params.id as Id<"grammarSets">,
-  });
+  const setId = params.id as Id<"grammarSets">;
+  const set = useQuery(api.grammarData.getGrammarSet, { id: setId });
+  // Must sit above the early returns below (rules of hooks).
+  const header = useGrammarHeader(setId);
   const { theme } = useColorTheme();
   const { hex400 } = theme;
 
@@ -195,7 +133,6 @@ export default function GrammarSetPage() {
       </p>
     );
   }
-
   if (set === null) {
     return (
       <p className="text-sm text-slate-500 dark:text-stone-500">
@@ -214,17 +151,37 @@ export default function GrammarSetPage() {
       <MatrixBackground theme={theme} />
 
       <div className="relative z-10 mx-auto max-w-3xl space-y-5 pb-16">
-        <header className="mb-2">
+        {/* A <div>, not <header>: <LessonHeader> renders its own <header>
+            and headers can't nest. */}
+        <div className="mb-2">
           <p className="text-sm font-medium" style={{ color: hex400 }}>
             Grammar Breakdown
           </p>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-stone-50">
-            {set.topic}
-          </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-stone-500">
+          {/* Themed glow around the header card. `getGrammarSet` only
+              returns sets the signed-in user owns, so anyone who can see
+              this page can edit it. */}
+          <div
+            className="mt-3 rounded-2xl"
+            style={{
+              boxShadow: `0 0 0 1px ${hex400}59, 0 0 40px -10px ${hex400}73`,
+            }}
+          >
+            <LessonHeader
+              title={set.topic}
+              learningObjective={set.learningObjective}
+              imageUrl={set.headerImage?.url}
+              editable
+              isUploadingImage={header.isImageBusy}
+              isSavingObjective={header.isSavingObjective}
+              onUploadImage={header.uploadImage}
+              onRemoveImage={header.removeImage}
+              onSaveObjective={header.saveObjective}
+            />
+          </div>
+          <p className="mt-3 text-sm text-slate-500 dark:text-stone-500">
             {set.sentences.length} sentences · {totalQuestions} quiz questions
           </p>
-        </header>
+        </div>
 
         <PartOfSpeechLegend />
 
