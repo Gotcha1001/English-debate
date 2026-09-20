@@ -24,6 +24,7 @@ import {
   ArrowLeftRight,
   GitCompare,
   Laugh,
+  PictureInPicture,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -44,6 +45,7 @@ const NAV_ITEMS = [
   { href: "/antonyms", label: "Antonyms", icon: ArrowLeftRight },
   { href: "/word-relations", label: "Word Relations", icon: GitCompare },
   { href: "/puns", label: "Pun Lab", icon: Laugh },
+  { href: "/pictures", label: "Pictures Talk", icon: PictureInPicture },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
