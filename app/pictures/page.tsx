@@ -200,6 +200,8 @@ function PresentView({
   const [query, setQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [imageHovered, setImageHovered] = useState(false);
+  // Aspect ratio (width / height) per picture id, learned as images load.
+  const [ratios, setRatios] = useState<Record<string, number>>({});
 
   const n = pictures.length;
   const current = pictures[index];
@@ -245,7 +247,17 @@ function PresentView({
     if (n < 2) return;
     for (const offset of [1, -1]) {
       const p = pictures[(index + offset + n) % n];
-      if (p) new Image().src = bigUrl(p.image.url);
+      if (!p) continue;
+      const img = new Image();
+      img.onload = () => {
+        if (!img.naturalWidth || !img.naturalHeight) return;
+        setRatios((r) =>
+          r[p._id]
+            ? r
+            : { ...r, [p._id]: img.naturalWidth / img.naturalHeight },
+        );
+      };
+      img.src = bigUrl(p.image.url);
     }
   }, [index, n, pictures]);
 
@@ -266,9 +278,15 @@ function PresentView({
     );
   }
 
-  // Drop-shadow follows the painted picture, so the glow hugs its real edges.
-  const glowOn = `drop-shadow(0 0 8px ${hex400}) drop-shadow(0 0 24px ${hex400}cc) drop-shadow(0 0 48px ${hex400}66)`;
-  const glowOff = `drop-shadow(0 0 0px ${hex400}00) drop-shadow(0 0 0px ${hex400}00) drop-shadow(0 0 0px ${hex400}00)`;
+  // Same number of shadows on/off so the CSS transition can interpolate.
+  const glowOn = `0 0 8px ${hex400}, 0 0 24px ${hex400}cc, 0 0 48px ${hex400}66`;
+  const glowOff = `0 0 0px ${hex400}00, 0 0 0px ${hex400}00, 0 0 0px ${hex400}00`;
+
+  // The picture box takes the picture's own shape and grows until it hits the
+  // stage height or the panel width, whichever comes first.
+  const ratio: number | undefined = ratios[current._id];
+  const boxRatio = ratio ?? 4 / 3;
+  const stageHeight = "max(20rem, calc(100vh - 24rem))";
 
   const variants: Variants = reduceMotion
     ? {
@@ -370,46 +388,71 @@ function PresentView({
           exit="exit"
         >
           <HudPanel className="p-3 sm:p-5">
+            {/* Fixed-height stage: Back/Next stay put whatever the picture's shape. */}
             <div
-              className="relative"
-              onMouseEnter={() => setImageHovered(true)}
-              onMouseLeave={() => setImageHovered(false)}
+              className="flex items-center justify-center"
+              style={{ height: stageHeight }}
             >
-              <motion.span
-                className="absolute left-3 top-3 z-10 inline-flex h-14 min-w-[3.5rem] items-center justify-center rounded-2xl px-3 text-2xl font-extrabold text-[#04070a]"
+              {/* Sized to the picture itself, so the rounded corners, glow,
+                  number badge and caption all sit on the picture's real edges. */}
+              <div
+                className="relative flex-none rounded-2xl"
                 style={{
-                  backgroundColor: shades[500],
-                  boxShadow: `0 0 24px -6px ${hex400}99`,
+                  aspectRatio: boxRatio,
+                  width: `min(100%, calc(${stageHeight} * ${boxRatio}))`,
+                  opacity: ratio ? 1 : 0,
+                  boxShadow: imageHovered ? glowOn : glowOff,
+                  transition: "box-shadow 300ms ease, opacity 200ms ease",
                 }}
-                initial={reduceMotion ? false : { scale: 0, rotate: -25 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 14,
-                  delay: 0.15,
-                }}
+                onMouseEnter={() => setImageHovered(true)}
+                onMouseLeave={() => setImageHovered(false)}
               >
-                {current.number}
-              </motion.span>
-              <img
-                src={bigUrl(current.image.url)}
-                alt={current.title}
-                draggable={false}
-                className="block h-[calc(100vh-24rem)] min-h-[20rem] w-full object-contain"
-                style={{
-                  filter: imageHovered ? glowOn : glowOff,
-                  transition: "filter 300ms ease",
-                }}
-              />
-              <motion.h2
-                className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent px-4 pb-4 pt-14 text-center text-3xl font-extrabold text-white sm:text-5xl"
-                initial={reduceMotion ? false : { y: 14, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.1, duration: 0.3 }}
-              >
-                {current.title}
-              </motion.h2>
+                <motion.span
+                  className="absolute left-3 top-3 z-10 inline-flex h-14 min-w-[3.5rem] items-center justify-center rounded-2xl px-3 text-2xl font-extrabold text-[#04070a]"
+                  style={{
+                    backgroundColor: shades[500],
+                    boxShadow: `0 0 24px -6px ${hex400}99`,
+                  }}
+                  initial={reduceMotion ? false : { scale: 0, rotate: -25 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 14,
+                    delay: 0.15,
+                  }}
+                >
+                  {current.number}
+                </motion.span>
+                <img
+                  src={bigUrl(current.image.url)}
+                  alt={current.title}
+                  draggable={false}
+                  onLoad={(e) => {
+                    const { naturalWidth: w, naturalHeight: h } =
+                      e.currentTarget;
+                    if (!w || !h) return;
+                    setRatios((r) =>
+                      r[current._id] ? r : { ...r, [current._id]: w / h },
+                    );
+                  }}
+                  onError={() =>
+                    // Broken image: still reveal the box instead of leaving it invisible.
+                    setRatios((r) =>
+                      r[current._id] ? r : { ...r, [current._id]: 4 / 3 },
+                    )
+                  }
+                  className="block h-full w-full rounded-2xl object-cover"
+                />
+                <motion.h2
+                  className="absolute inset-x-0 bottom-0 rounded-b-2xl bg-gradient-to-t from-black/80 via-black/50 to-transparent px-4 pb-4 pt-14 text-center text-3xl font-extrabold text-white sm:text-5xl"
+                  initial={reduceMotion ? false : { y: 14, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.1, duration: 0.3 }}
+                >
+                  {current.title}
+                </motion.h2>
+              </div>
             </div>
           </HudPanel>
         </motion.div>
