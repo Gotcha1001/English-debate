@@ -25,6 +25,8 @@ import type * as lessonsActions from "../lessonsActions.js";
 import type * as lifeSituations from "../lifeSituations.js";
 import type * as lifeSituationsActions from "../lifeSituationsActions.js";
 import type * as lifeSituationsData from "../lifeSituationsData.js";
+import type * as picturesActions from "../picturesActions.js";
+import type * as picturesData from "../picturesData.js";
 import type * as puns from "../puns.js";
 import type * as punsActions from "../punsActions.js";
 import type * as punsData from "../punsData.js";
@@ -69,6 +71,8 @@ declare const fullApi: ApiFromModules<{
   lifeSituations: typeof lifeSituations;
   lifeSituationsActions: typeof lifeSituationsActions;
   lifeSituationsData: typeof lifeSituationsData;
+  picturesActions: typeof picturesActions;
+  picturesData: typeof picturesData;
   puns: typeof puns;
   punsActions: typeof punsActions;
   punsData: typeof punsData;
