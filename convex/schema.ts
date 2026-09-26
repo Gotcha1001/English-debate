@@ -287,4 +287,24 @@ export default defineSchema({
     createdBy: v.id("users"),
     createdAt: v.number(),
   }).index("by_creator_number", ["createdBy", "number"]),
+
+  // ADD to convex/schema.ts, as one more table inside defineSchema({ ... }),
+  // alongside lifeSituationSets etc. Reuses the `headerFields` spread already
+  // defined at the top of that file (learningObjective + headerImage).
+
+  topNewsLessons: defineTable({
+    ...headerFields,
+    headline: v.string(), // ESL-simplified headline
+    story: v.string(),
+    sourceName: v.string(), // e.g. "bbc.com" -- the article's hostname
+    sourceUrl: v.string(), // the original article URL
+    publishedDate: v.optional(v.string()), // from Tavily, if the article had one
+    comprehensionQuestions: v.array(
+      v.object({ question: v.string(), answer: v.string() }),
+    ), // exactly 5
+    vocabulary: v.array(v.object({ word: v.string(), meaning: v.string() })), // exactly 6
+    discussionQuestions: v.array(v.string()), // exactly 10
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_creator", ["createdBy"]),
 });

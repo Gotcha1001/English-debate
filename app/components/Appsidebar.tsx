@@ -25,6 +25,7 @@ import {
   GitCompare,
   Laugh,
   PictureInPicture,
+  LucideNewspaper,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -36,6 +37,7 @@ import { buildHudGridBackground } from "@/lib/colorThemes";
 
 const NAV_ITEMS = [
   { href: "/free-talking", label: "Full Lesson", icon: BookOpen },
+  { href: "/top-news", label: "Top News", icon: LucideNewspaper },
   { href: "/quick-questions", label: "40 Questions", icon: ListChecks },
   { href: "/life-situations", label: "Life Situations", icon: Shuffle },
   { href: "/tenses", label: "Tenses", icon: Clock },
