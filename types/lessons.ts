@@ -849,3 +849,57 @@ export function assertGeneratedPunSet(value: unknown): GeneratedPunSet {
     discussionQuestions: v.discussionQuestions,
   };
 }
+
+// ADD to types/lessons.ts, below assertGeneratedLifeSituationsSet. Reuses
+// isString, isStringArray, isComprehensionQuestion, and isVocabularyEntry
+// already defined earlier in this file -- same "validate unknown JSON,
+// throw a descriptive error, never return a partially-typed object"
+// pattern as every other assertGenerated* function here.
+
+// ---- Top News -----------------------------------------------------------
+
+// The shape the AI model must return for a Top News lesson, built from a
+// real article Tavily fetched (see lib/tavily.ts and convex/topNews.ts).
+export interface GeneratedTopNewsLesson {
+  headline: string;
+  story: string;
+  comprehensionQuestions: ComprehensionQuestion[]; // exactly 5
+  vocabulary: VocabularyEntry[]; // exactly 6
+  discussionQuestions: string[]; // exactly 10
+}
+
+export function assertGeneratedTopNewsLesson(
+  value: unknown,
+): GeneratedTopNewsLesson {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("Top News JSON was not an object");
+  }
+  const v = value as Record<string, unknown>;
+
+  if (!isString(v.headline)) {
+    throw new Error("Top News JSON missing string 'headline'");
+  }
+  if (!isString(v.story)) {
+    throw new Error("Top News JSON missing string 'story'");
+  }
+  if (
+    !Array.isArray(v.comprehensionQuestions) ||
+    !v.comprehensionQuestions.every(isComprehensionQuestion)
+  ) {
+    throw new Error("Top News JSON has invalid 'comprehensionQuestions'");
+  }
+  if (!Array.isArray(v.vocabulary) || !v.vocabulary.every(isVocabularyEntry)) {
+    throw new Error("Top News JSON has invalid 'vocabulary'");
+  }
+  if (!isStringArray(v.discussionQuestions)) {
+    throw new Error("Top News JSON has invalid 'discussionQuestions'");
+  }
+
+  return {
+    headline: v.headline,
+    story: v.story,
+    comprehensionQuestions: v.comprehensionQuestions,
+    vocabulary: v.vocabulary,
+    discussionQuestions: v.discussionQuestions,
+  };
+}

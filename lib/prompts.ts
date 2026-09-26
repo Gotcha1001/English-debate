@@ -526,3 +526,52 @@ Requirements:
 Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
 ${PUN_JSON_SHAPE}`;
 }
+
+// ADD to lib/prompts.ts, below buildLifeSituationsPrompt (or anywhere else
+// in the file). Reuses Difficulty and DIFFICULTY_INSTRUCTIONS already
+// defined at the top of this file.
+
+const TOP_NEWS_JSON_SHAPE = `{
+  "headline": string,
+  "story": string,                // 150-250 words, ESL-friendly retelling of the real article
+  "comprehensionQuestions": [ { "question": string, "answer": string } ],   // exactly 5, answerable from the story
+  "vocabulary": [ { "word": string, "meaning": string } ],  // exactly 6 difficult words from the story, simple one-sentence meanings
+  "discussionQuestions": [string]  // exactly 10, opinions/personal questions about the real-world issue behind the article
+}`;
+
+/**
+ * "Top News" generator -- unlike every other prompt in this file, this one
+ * is fed a REAL article (fetched by lib/tavily.ts) instead of just a topic
+ * string. The model's job is to retell it in ESL-friendly English and build
+ * a lesson around it, not invent content, so the requirements are stricter
+ * about staying factual.
+ */
+export function buildTopNewsPrompt(
+  articleTitle: string,
+  articleContent: string,
+  difficulty?: Difficulty,
+): string {
+  const difficultyInstruction =
+    DIFFICULTY_INSTRUCTIONS[difficulty ?? "intermediate"];
+  // Trim very long scraped pages so the prompt stays a reasonable size.
+  const trimmedContent = articleContent.slice(0, 6000);
+
+  return `You are an ESL (English as a Second Language) lesson writer. Turn today's real news article below into one "Top News" reading lesson for adult English learners.
+
+ARTICLE HEADLINE: "${articleTitle}"
+
+ARTICLE CONTENT (real, scraped today --- use it as your only source of facts, don't invent details):
+"""
+${trimmedContent}
+"""
+
+Requirements:
+- "headline": rewrite the headline in clear, simple English if the original is dense or full of jargon; keep it accurate to the article.
+- "story": retell the article as 150-250 words of ESL-friendly English. ${difficultyInstruction} Use only the real facts from the article above --- do not add invented quotes, numbers, or events.
+- "comprehensionQuestions": exactly 5 questions that can be answered directly from the story, with short model answers --- these test whether the learner understood what happened.
+- "vocabulary": exactly 6 words or short phrases taken from the story that a learner might not know, each with a simple, one-sentence meaning (plain and easy, not a dictionary definition).
+- "discussionQuestions": exactly 10 open, personal-opinion speaking-practice questions inspired by the REAL-WORLD topic of the article, not just facts from the story. For example, if the article is about a new eco-friendly plastic, ask things like "Would you pay more for a product made from this plastic?" or "Do you think companies should be required to use materials like this?". Each question should be something a learner could genuinely debate or share an opinion on, connected to the article's subject. Keep each under 25 words.
+
+Respond with ONLY a single JSON object, no markdown fences, no commentary, matching exactly this shape:
+${TOP_NEWS_JSON_SHAPE}`;
+}
