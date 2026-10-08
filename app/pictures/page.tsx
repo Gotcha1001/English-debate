@@ -705,31 +705,12 @@
 "use client";
 
 // app/pictures/page.tsx
-// Rendered WITHOUT the sidebar/navbar (see app/components/AppShell.tsx).
+// Owner page: opens on "Add & manage". Rendered WITHOUT the sidebar/navbar
+// (see app/components/AppShell.tsx).
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
+import { useState, type FormEvent } from "react";
 import { useAction, useQuery } from "convex/react";
-import {
-  AnimatePresence,
-  motion,
-  useReducedMotion,
-  type Variants,
-} from "framer-motion";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ImagePlus,
-  Images,
-  Loader2,
-  Search,
-} from "lucide-react";
+import { ExternalLink, Link2, ImagePlus, Images, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
@@ -737,6 +718,11 @@ import { useDeleteSetAction } from "@/hooks/useDeleteSet";
 import { HudPanel } from "@/app/components/HudPanel";
 import { DeleteButton } from "@/app/components/DeleteButton";
 import { MatrixBackground } from "@/app/components/MatrixBackground";
+import {
+  PictureDeck,
+  useDeck,
+  withTransform,
+} from "@/app/components/PictureDeck";
 import { useColorTheme } from "@/app/context/ColorThemeContext";
 
 type Picture = Doc<"pictureCards">;
@@ -744,16 +730,6 @@ type Mode = "present" | "manage";
 
 // --- helpers ---------------------------------------------------------------
 
-// Cloudinary delivers a resized, auto-format copy when a transformation
-// segment is added after /upload/.
-function withTransform(url: string, transform: string) {
-  return url.includes("/upload/")
-    ? url.replace("/upload/", `/upload/${transform}/`)
-    : url;
-}
-
-const bigUrl = (url: string) =>
-  withTransform(url, "f_auto,q_auto,w_2000,c_limit");
 const thumbUrl = (url: string) =>
   withTransform(url, "f_auto,q_auto,w_400,h_400,c_fill");
 
@@ -792,25 +768,13 @@ async function fileToResizedDataUri(
 // --- page ------------------------------------------------------------------
 
 export default function PicturesPage() {
-  const [mode, setMode] = useState<Mode>("present");
-  const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState(1);
+  // Starts on Add & manage.
+  const [mode, setMode] = useState<Mode>("manage");
   const pictures = useQuery(api.picturesData.listMyPictures);
+  const deckId = useQuery(api.picturesData.myDeckId);
+  const deck = useDeck(pictures?.length ?? 0);
   const { theme } = useColorTheme();
   const { hex400, shades } = theme;
-
-  const count = pictures?.length ?? 0;
-  // If pictures were deleted, keep the index inside the deck.
-  const safeIndex = Math.min(index, Math.max(count - 1, 0));
-
-  const goTo = useCallback(
-    (target: number, dir: number) => {
-      if (count === 0) return;
-      setDirection(dir);
-      setIndex(((target % count) + count) % count); // wraps around
-    },
-    [count],
-  );
 
   const tabs: { id: Mode; label: string; icon: typeof Images }[] = [
     { id: "present", label: "Show pictures", icon: Images },
@@ -840,47 +804,41 @@ export default function PicturesPage() {
     </div>
   );
 
-  // ---- Present mode: the picture takes the whole screen ----
-  if (mode === "present") {
+  // ---- Show pictures: the picture takes the whole screen ----
+  if (mode === "present" && pictures !== undefined) {
     return (
-      <div className="relative h-dvh overflow-hidden">
-        <MatrixBackground />
-        <div className="relative z-10 flex h-full flex-col p-2 sm:p-3">
-          {pictures === undefined ? (
-            <>
-              <div className="mb-2 flex items-center gap-3">
-                <h1 className="text-xl font-bold text-slate-900 dark:text-stone-50">
-                  Picture Talk
-                </h1>
-                {tabSwitcher}
-              </div>
-              <p className="text-sm text-slate-500 dark:text-stone-500">
-                Loading...
-              </p>
-            </>
-          ) : (
-            <PresentView
-              pictures={pictures}
-              index={safeIndex}
-              direction={direction}
-              onGo={goTo}
-              onManage={() => setMode("manage")}
-              header={
-                <div className="flex items-center gap-3">
-                  <h1 className="text-xl font-bold text-slate-900 dark:text-stone-50">
-                    Picture Talk
-                  </h1>
-                  {tabSwitcher}
-                </div>
-              }
-            />
-          )}
-        </div>
-      </div>
+      <PictureDeck
+        pictures={pictures}
+        index={deck.index}
+        direction={deck.direction}
+        onGo={deck.goTo}
+        header={
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold text-slate-900 dark:text-stone-50">
+              Picture Talk
+            </h1>
+            {tabSwitcher}
+          </div>
+        }
+        empty={
+          <HudPanel className="p-8 text-center">
+            <p className="text-stone-300">No pictures yet.</p>
+            <button
+              type="button"
+              onClick={() => setMode("manage")}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 font-semibold text-[#04070a] transition"
+              style={{ backgroundColor: shades[500] }}
+            >
+              <ImagePlus className="h-4 w-4" />
+              Add your first picture
+            </button>
+          </HudPanel>
+        }
+      />
     );
   }
 
-  // ---- Manage mode: normal scrolling page ----
+  // ---- Add & manage: normal scrolling page ----
   return (
     <div className="relative min-h-dvh overflow-x-hidden">
       <MatrixBackground />
@@ -894,7 +852,12 @@ export default function PicturesPage() {
             big &mdash; &ldquo;Have you ever tried this?&rdquo;
           </p>
         </header>
-        <div className="mb-6">{tabSwitcher}</div>
+
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          {tabSwitcher}
+          <PublicLinkButtons deckId={deckId} hasPictures={!!pictures?.length} />
+        </div>
+
         {pictures === undefined ? (
           <p className="text-sm text-slate-500 dark:text-stone-500">
             Loading...
@@ -903,8 +866,7 @@ export default function PicturesPage() {
           <ManageView
             pictures={pictures}
             onOpen={(i) => {
-              setDirection(1);
-              setIndex(i);
+              deck.open(i);
               setMode("present");
             }}
           />
@@ -914,303 +876,63 @@ export default function PicturesPage() {
   );
 }
 
-// --- present mode ----------------------------------------------------------
+// --- public gallery buttons --------------------------------------------------
 
-function PresentView({
-  pictures,
-  index,
-  direction,
-  onGo,
-  onManage,
-  header,
+function PublicLinkButtons({
+  deckId,
+  hasPictures,
 }: {
-  pictures: Picture[];
-  index: number;
-  direction: number;
-  onGo: (target: number, dir: number) => void;
-  onManage: () => void;
-  header: ReactNode;
+  deckId: string | null | undefined;
+  hasPictures: boolean;
 }) {
   const { theme } = useColorTheme();
   const { hex400, shades } = theme;
-  const reduceMotion = useReducedMotion();
-  const [query, setQuery] = useState("");
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [imageHovered, setImageHovered] = useState(false);
 
-  const n = pictures.length;
-  const current = pictures[index];
+  if (!deckId) return null;
+  const path = `/pictures/view/${deckId}`;
 
-  const next = useCallback(() => onGo(index + 1, 1), [onGo, index]);
-  const prev = useCallback(() => onGo(index - 1, -1), [onGo, index]);
-
-  // Search by number ("7") or by any part of the title ("dog").
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    return pictures
-      .map((p, i) => ({ p, i }))
-      .filter(
-        ({ p }) => String(p.number) === q || p.title.toLowerCase().includes(q),
-      )
-      .sort(
-        (a, b) =>
-          Number(String(b.p.number) === q) - Number(String(a.p.number) === q),
-      )
-      .slice(0, 6);
-  }, [query, pictures]);
-
-  const jumpTo = (i: number) => {
-    onGo(i, i >= index ? 1 : -1);
-    setQuery("");
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${path}`);
+      toast.success("Public link copied");
+    } catch {
+      toast.error("Couldn't copy the link.");
+    }
   };
 
-  // Left / right arrow keys (ignored while typing in the search box).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null;
-      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
-      if (e.key === "ArrowRight") next();
-      else if (e.key === "ArrowLeft") prev();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [next, prev]);
-
-  // Warm the cache for the neighbouring pictures so "Next" feels instant.
-  useEffect(() => {
-    if (n < 2) return;
-    for (const offset of [1, -1]) {
-      const p = pictures[(index + offset + n) % n];
-      if (p) new Image().src = bigUrl(p.image.url);
-    }
-  }, [index, n, pictures]);
-
-  if (n === 0 || !current) {
-    return (
-      <>
-        <div className="mb-2">{header}</div>
-        <HudPanel className="p-8 text-center">
-          <p className="text-stone-300">No pictures yet.</p>
-          <button
-            type="button"
-            onClick={onManage}
-            className="mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 font-semibold text-[#04070a] transition"
-            style={{ backgroundColor: shades[500] }}
-          >
-            <ImagePlus className="h-4 w-4" />
-            Add your first picture
-          </button>
-        </HudPanel>
-      </>
-    );
-  }
-
-  // Drop-shadow follows the painted picture, so the glow hugs its real edges.
-  const glowOn = `drop-shadow(0 0 8px ${hex400}) drop-shadow(0 0 24px ${hex400}cc) drop-shadow(0 0 48px ${hex400}66)`;
-  const glowOff = `drop-shadow(0 0 0px ${hex400}00) drop-shadow(0 0 0px ${hex400}00) drop-shadow(0 0 0px ${hex400}00)`;
-
-  const variants: Variants = reduceMotion
-    ? {
-        enter: { opacity: 0 },
-        center: { opacity: 1, transition: { duration: 0.15 } },
-        exit: { opacity: 0, transition: { duration: 0.1 } },
-      }
-    : {
-        enter: (dir: number) => ({
-          x: dir > 0 ? 140 : -140,
-          opacity: 0,
-          scale: 0.9,
-          rotate: dir > 0 ? 3 : -3,
-        }),
-        center: {
-          x: 0,
-          opacity: 1,
-          scale: 1,
-          rotate: 0,
-          transition: { type: "spring", stiffness: 260, damping: 26 },
-        },
-        exit: (dir: number) => ({
-          x: dir > 0 ? -140 : 140,
-          opacity: 0,
-          scale: 0.9,
-          transition: { duration: 0.18 },
-        }),
-      };
-
   return (
-    <>
-      {/* Slim top bar: title + tabs on the left, small search on the right */}
-      <div className="mb-2 flex items-center justify-between gap-3">
-        {header}
-
-        <form
-          className="relative w-44 sm:w-60"
-          onSubmit={(e: FormEvent) => {
-            e.preventDefault();
-            if (matches[0]) jumpTo(matches[0].i);
-          }}
-        >
-          <label htmlFor="picture-search" className="sr-only">
-            Search by number or title
-          </label>
-          <Search
-            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
-            style={{ color: `${shades[300]}80` }}
-          />
-          <input
-            id="picture-search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            placeholder="Number or title..."
-            autoComplete="off"
-            className="w-full rounded-lg bg-[#0a1219] py-1.5 pl-8 pr-3 text-sm text-stone-50 outline-none transition"
-            style={{
-              border: `1px solid ${searchFocused ? hex400 : `${hex400}33`}`,
-              boxShadow: searchFocused ? `0 0 0 2px ${hex400}33` : undefined,
-            }}
-          />
-          {query.trim() && (
-            <ul
-              className="absolute right-0 z-30 mt-1.5 w-72 max-w-[85vw] overflow-hidden rounded-lg bg-[#0a1219] shadow-xl"
-              style={{ border: `1px solid ${hex400}33` }}
-            >
-              {matches.length === 0 ? (
-                <li className="px-4 py-3 text-sm text-stone-400">
-                  No picture matches &ldquo;{query.trim()}&rdquo;
-                </li>
-              ) : (
-                matches.map(({ p, i }) => (
-                  <li key={p._id}>
-                    <button
-                      type="button"
-                      onClick={() => jumpTo(i)}
-                      className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-stone-50 transition hover:bg-white/5"
-                    >
-                      <span
-                        className="inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-md px-2 text-xs font-bold text-[#04070a]"
-                        style={{ backgroundColor: shades[500] }}
-                      >
-                        {p.number}
-                      </span>
-                      {p.title}
-                    </button>
-                  </li>
-                ))
-              )}
-            </ul>
-          )}
-        </form>
-      </div>
-
-      {/* The picture: takes all remaining space */}
-      <div className="min-h-0 flex-1">
-        <AnimatePresence mode="wait" custom={direction} initial={false}>
-          <motion.div
-            key={current._id}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-          >
-            <HudPanel className="p-1.5 sm:p-2">
-              <div
-                className="relative"
-                onMouseEnter={() => setImageHovered(true)}
-                onMouseLeave={() => setImageHovered(false)}
-              >
-                <motion.span
-                  className="absolute left-3 top-3 z-10 inline-flex h-14 min-w-[3.5rem] items-center justify-center rounded-2xl px-3 text-2xl font-extrabold text-[#04070a]"
-                  style={{
-                    backgroundColor: shades[500],
-                    boxShadow: `0 0 24px -6px ${hex400}99`,
-                  }}
-                  initial={reduceMotion ? false : { scale: 0, rotate: -25 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 14,
-                    delay: 0.15,
-                  }}
-                >
-                  {current.number}
-                </motion.span>
-
-                {/* 100dvh minus top bar, bottom bar and paddings */}
-                <img
-                  src={bigUrl(current.image.url)}
-                  alt={current.title}
-                  draggable={false}
-                  className="block h-[calc(100dvh-9.5rem)] min-h-[16rem] w-full object-contain"
-                  style={{
-                    filter: imageHovered ? glowOn : glowOff,
-                    transition: "filter 300ms ease",
-                  }}
-                />
-
-                <motion.h2
-                  className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent px-4 pb-4 pt-14 text-center text-3xl font-extrabold text-white sm:text-5xl"
-                  initial={reduceMotion ? false : { y: 14, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.1, duration: 0.3 }}
-                >
-                  {current.title}
-                </motion.h2>
-              </div>
-            </HudPanel>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      {/* Back / counter / Next */}
-      <div className="mt-2 flex items-center justify-between gap-3">
-        <motion.button
-          type="button"
-          onClick={prev}
-          disabled={n < 2}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.94 }}
-          aria-label="Previous picture"
-          className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-base font-semibold transition disabled:opacity-40"
-          style={{
-            borderColor: `${hex400}4d`,
-            backgroundColor: `${hex400}1a`,
-            color: shades[300],
-          }}
-        >
-          <ChevronLeft className="h-5 w-5" />
-          Back
-        </motion.button>
-
-        <span
-          className="text-base font-semibold tabular-nums"
-          style={{ color: `${shades[300]}b3` }}
-        >
-          {index + 1} / {n}
-        </span>
-
-        <motion.button
-          type="button"
-          onClick={next}
-          disabled={n < 2}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.94 }}
-          aria-label="Next picture"
-          className="inline-flex items-center gap-2 rounded-xl px-7 py-2 text-lg font-bold text-[#04070a] transition disabled:opacity-40"
-          style={{
-            backgroundColor: shades[500],
-            boxShadow: `0 0 24px -6px ${hex400}80`,
-          }}
-        >
-          Next
-          <ChevronRight className="h-5 w-5" />
-        </motion.button>
-      </div>
-    </>
+    <div className="flex items-center gap-2">
+      <a
+        href={path}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-disabled={!hasPictures}
+        onClick={(e) => {
+          if (!hasPictures) e.preventDefault();
+        }}
+        className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold text-[#04070a] transition ${
+          hasPictures ? "" : "cursor-not-allowed opacity-50"
+        }`}
+        style={{ backgroundColor: shades[500] }}
+      >
+        <ExternalLink className="h-4 w-4" />
+        Open all pictures (public)
+      </a>
+      <button
+        type="button"
+        onClick={copy}
+        disabled={!hasPictures}
+        className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition disabled:opacity-50"
+        style={{
+          borderColor: `${hex400}4d`,
+          backgroundColor: `${hex400}1a`,
+          color: shades[300],
+        }}
+      >
+        <Link2 className="h-4 w-4" />
+        Copy link
+      </button>
+    </div>
   );
 }
 
