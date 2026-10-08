@@ -47,7 +47,13 @@ const NAV_ITEMS = [
   { href: "/antonyms", label: "Antonyms", icon: ArrowLeftRight },
   { href: "/word-relations", label: "Word Relations", icon: GitCompare },
   { href: "/puns", label: "Pun Lab", icon: Laugh },
-  { href: "/pictures", label: "Pictures Talk", icon: PictureInPicture },
+  // Opens full-screen in a new tab (no sidebar/navbar, see AppShell.tsx)
+  {
+    href: "/pictures",
+    label: "Pictures Talk",
+    icon: PictureInPicture,
+    newTab: true,
+  },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -214,7 +220,7 @@ export function AppSidebar() {
               Navigation
             </SidebarGroupLabel>
             <SidebarMenu>
-              {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+              {NAV_ITEMS.map(({ href, label, icon: Icon, newTab }) => {
                 const isActive = pathname === href;
                 return (
                   <SidebarMenuItem key={href}>
@@ -232,7 +238,11 @@ export function AppSidebar() {
                           : undefined
                       }
                     >
-                      <Link href={href}>
+                      <Link
+                        href={href}
+                        target={newTab ? "_blank" : undefined}
+                        rel={newTab ? "noopener noreferrer" : undefined}
+                      >
                         <Icon
                           size={16}
                           style={isActive ? { color: hex400 } : undefined}

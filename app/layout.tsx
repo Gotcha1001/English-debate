@@ -5,12 +5,9 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "next-themes";
 import { ConvexClientProvider } from "./ConvexClientProvider";
-import Navbar from "./components/Navbar";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-
 import Provider from "./provider";
-import { AppSidebar } from "./components/Appsidebar";
 import { ColorThemeProvider } from "./context/ColorThemeContext";
+import { AppShell } from "./components/AppShell";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({
@@ -39,22 +36,9 @@ export default function RootLayout({
             <ConvexClientProvider>
               <Provider>
                 <ColorThemeProvider>
-                  <SidebarProvider>
-                    <AppSidebar />
-                    <SidebarInset>
-                      <Navbar />
-                      <main className="p-4 lg:p-6">
-                        {children}
-                        <Toaster
-                          theme="dark"
-                          position="bottom-right"
-                          richColors
-                        />
-                      </main>
-                    </SidebarInset>
-                  </SidebarProvider>
+                  {/* AppShell adds the sidebar + navbar, except on /pictures */}
+                  <AppShell>{children}</AppShell>
                 </ColorThemeProvider>
-
                 <Toaster richColors />
               </Provider>
             </ConvexClientProvider>
