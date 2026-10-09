@@ -110,7 +110,6 @@ export const COLOR_THEMES: Record<ColorThemeId, ColorTheme> = {
 };
 
 export const COLOR_THEME_LIST: ColorTheme[] = Object.values(COLOR_THEMES);
-
 export const DEFAULT_COLOR_THEME: ColorThemeId = "cyan";
 
 export function isColorThemeId(value: string): value is ColorThemeId {

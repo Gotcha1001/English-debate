@@ -1,3 +1,4 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -35,8 +36,9 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <ConvexClientProvider>
               <Provider>
+                {/* ColorThemeProvider MUST wrap everything that calls useColorTheme(),
+                    including AppShell and every page (public ones too). */}
                 <ColorThemeProvider>
-                  {/* AppShell adds the sidebar + navbar, except on /pictures */}
                   <AppShell>{children}</AppShell>
                 </ColorThemeProvider>
                 <Toaster richColors />

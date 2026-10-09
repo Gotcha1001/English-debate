@@ -26,6 +26,7 @@ import {
   Laugh,
   PictureInPicture,
   LucideNewspaper,
+  Images,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -52,6 +53,12 @@ const NAV_ITEMS = [
     href: "/pictures",
     label: "Pictures Talk",
     icon: PictureInPicture,
+    newTab: true,
+  },
+  {
+    href: "/pictures/show",
+    label: "Show Pictures",
+    icon: Images,
     newTab: true,
   },
   { href: "/settings", label: "Settings", icon: Settings },
