@@ -1,6 +1,13 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)", "/"]);
+// "/pictures/view(.*)" and "/pictures/show(.*)" = public, view-only picture pages (no sign-in).
+const isPublicRoute = createRouteMatcher([
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/",
+  "/pictures/view(.*)",
+  "/pictures/show(.*)",
+]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (!isPublicRoute(req)) {

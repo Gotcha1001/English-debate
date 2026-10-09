@@ -1,10 +1,10 @@
 "use client";
 
 // app/pictures/show/page.tsx
-// View-only Picture Talk for the signed-in owner. Same player as "Show pictures"
+// View-only Picture Talk, PUBLIC (no sign-in, see proxy.ts). Same player as "Show pictures"
 // (search bar + next/previous), but NO "Add & manage" tab, NO upload/delete.
 // Lives under /pictures, so AppShell already renders it full-screen without
-// the sidebar/navbar (STANDALONE_ROUTES), and proxy.ts already protects it.
+// the sidebar/navbar (STANDALONE_ROUTES).
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -12,7 +12,7 @@ import { HudPanel } from "@/app/components/HudPanel";
 import { PictureDeck, useDeck } from "@/app/components/PictureDeck";
 
 export default function ShowPicturesPage() {
-  const pictures = useQuery(api.picturesData.listMyPictures);
+  const pictures = useQuery(api.picturesData.listShowPictures);
   const deck = useDeck(pictures?.length ?? 0);
 
   if (pictures === undefined) {
