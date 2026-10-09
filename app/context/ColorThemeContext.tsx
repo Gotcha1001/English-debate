@@ -1,3 +1,4 @@
+// app/context/ColorThemeContext.tsx
 "use client";
 
 import {
@@ -36,9 +37,14 @@ function subscribeNoop() {
   return () => {};
 }
 
+// localStorage can throw (private mode, in-app browsers), so always guard it.
 function getLocalSnapshot(): ColorThemeId {
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  return stored && isColorThemeId(stored) ? stored : DEFAULT_COLOR_THEME;
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    return stored && isColorThemeId(stored) ? stored : DEFAULT_COLOR_THEME;
+  } catch {
+    return DEFAULT_COLOR_THEME;
+  }
 }
 
 function getServerSnapshot(): ColorThemeId {
@@ -47,6 +53,7 @@ function getServerSnapshot(): ColorThemeId {
 
 export function ColorThemeProvider({ children }: { children: ReactNode }) {
   const { isSignedIn } = useUser();
+  // Skipped for signed-out visitors (e.g. the public /pictures/view page).
   const currentUser = useQuery(api.user.getMe, isSignedIn ? {} : "skip");
   const setUserColorTheme = useMutation(api.user.setColorTheme);
 
@@ -68,7 +75,11 @@ export function ColorThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.dataset.accent = themeId;
-    window.localStorage.setItem(STORAGE_KEY, themeId);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, themeId);
+    } catch {
+      /* storage blocked: ignore */
+    }
   }, [themeId]);
 
   const setThemeId = useCallback(
@@ -88,7 +99,7 @@ export function ColorThemeProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ColorThemeContextValue>(
     () => ({
       themeId,
-      theme: COLOR_THEMES[themeId],
+      theme: COLOR_THEMES[themeId] ?? COLOR_THEMES[DEFAULT_COLOR_THEME],
       setThemeId,
       isSaving,
     }),
